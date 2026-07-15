@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The hardest test suite I ever built — a pytest case study</title>
+  <link rel="stylesheet" href="./reveal/dist/reset.css">
+  <link rel="stylesheet" href="./reveal/dist/reveal.css">
+  <link rel="stylesheet" href="./reveal/plugin/highlight/monokai.css">
+  <link rel="stylesheet" href="./theme.css">
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- ============ S01 · TEASER · Title ============ -->
+      <section class="gk-billboard">
+        <div class="gk-frame">
+          <div class="gk-kicker">EuroPython 2026 · a pytest case study</div>
+          <h1>The hardest test suite<br>I ever built</h1>
+          <p class="muted" style="margin-top:1.4em; font-size:0.7em;">Grzegorz Kocjan · BeLazy.dev</p>
+        </div>
+        <aside class="notes">[⏱ 0:00] Hey. How do you imagine the integration tests for a really complicated system? Mine was computer vision: real cars, real cameras, running twenty-four hours a day — and right about 85% of the time, by design. But picture yours. The most complicated system you've ever worked on. How would you write integration tests for that? [3 s pause — the silence belongs to me; then click to the code slide]</aside>
+      </section>
+
+      <!-- ============ S02 · PAYOFF · Color test (2 lines) ============ -->
+      <section>
+        <div class="gk-frame" style="justify-content:center;">
+          <pre style="width:auto;"><code class="language-python" data-trim data-noescape>
+def test_car_has_correct_color(car_case, first_sighting):
+    assert first_sighting["color"] == car_case.current.color
+          </code></pre>
+        </div>
+        <aside class="notes">[⏱ 0:27] Here's mine. [pause] This is it. This is enough. Twenty-one tests, most of them a few lines long. The simplest tests I ever wrote. And together: the hardest test suite I ever built. In the next thirty minutes, I'll show you why both halves are true.</aside>
+      </section>
+
+      <!-- ============ S03 · PAYOFF · 0 → 96 → 0 + blackout ============ -->
+      <section class="gk-tally">
+        <div class="gk-frame">
+          <div class="gk-context">2021 · computer vision · 17 months in production</div>
+          <div class="gk-line fragment" data-fragment-index="1">Integration tests: <span class="n">0</span></div>
+          <div class="gk-line fragment" data-fragment-index="2">Unit tests: <span class="n">96</span></div>
+          <div class="gk-line fragment" data-fragment-index="3">Tests that could catch a bug: <span class="n gk-bad-text">0</span></div>
+        </div>
+        <aside class="notes">[⏱ 0:53] So let me take you back to 2021. The system was already live: a computer-vision pipeline watching parking garages — cameras at the entrance, a model reading license plates, colors, makes. It had been running in production for seventeen months. [CLICK] Number of integration tests: zero. [CLICK] Number of unit tests: ninety-six, actually. [CLICK] Number of tests that could catch a bug: still zero. [micro-pause for laughter]
+
+So here's how we learned about regressions. We'd change something — improve a model, tweak a heuristic. We'd deploy. And a day or two later, a phone would ring: a garage attendant saying, "hey… the system is much worse today." That was our regression detection. A human. Noticing. Calling. We didn't even have numbers. When I say the system was right "about 85% of the time" — that's not a measurement. That's a guesstimate.</aside>
+      </section>
+
+      <!-- ============ S03b · PAYOFF · Three doors: the only door that wasn't locked ============ -->
+      <section>
+        <div class="gk-frame" style="align-items:center; justify-content:center;">
+          <svg viewBox="0 0 1200 560" style="width:1100px; max-width:90%;" role="img"
+               aria-label="three doors: unit tests and acceptance tests are locked, integration tests is ajar">
+            <!-- door 1: unit tests (locked, padlock) -->
+            <g stroke="var(--gk-muted)" fill="none" stroke-width="6">
+              <rect x="60" y="60" width="280" height="440" rx="10"/>
+              <circle cx="300" cy="290" r="10" fill="var(--gk-muted)"/>
+            </g>
+            <g stroke="var(--gk-muted)" fill="var(--gk-bg)" stroke-width="8">
+              <rect x="160" y="250" width="80" height="64" rx="10"/>
+              <path d="M175 250 v-25 a25 25 0 0 1 50 0 v25" fill="none"/>
+            </g>
+            <text x="200" y="545" text-anchor="middle" fill="var(--gk-muted)"
+                  font-family="var(--gk-font-mono)" font-size="26">unit tests</text>
+            <!-- door 2: acceptance tests (locked, padlock) -->
+            <g stroke="var(--gk-muted)" fill="none" stroke-width="6">
+              <rect x="460" y="60" width="280" height="440" rx="10"/>
+              <circle cx="700" cy="290" r="10" fill="var(--gk-muted)"/>
+            </g>
+            <g stroke="var(--gk-muted)" fill="var(--gk-bg)" stroke-width="8">
+              <rect x="560" y="250" width="80" height="64" rx="10"/>
+              <path d="M575 250 v-25 a25 25 0 0 1 50 0 v25" fill="none"/>
+            </g>
+            <text x="600" y="545" text-anchor="middle" fill="var(--gk-muted)"
+                  font-family="var(--gk-font-mono)" font-size="26">acceptance tests</text>
+            <!-- door 3: integration tests (ajar, light) -->
+            <g class="fragment" data-fragment-index="1">
+              <polygon points="1140,60 1010,110 1010,450 1140,500" fill="var(--gk-accent)" opacity="0.16"/>
+            </g>
+            <g stroke="var(--gk-accent)" fill="none" stroke-width="6">
+              <rect x="860" y="60" width="280" height="440" rx="10" stroke="var(--gk-muted)"/>
+              <g class="fragment" data-fragment-index="1">
+                <polygon points="860,60 1010,110 1010,450 860,500" fill="var(--gk-bg)"/>
+                <circle cx="990" cy="285" r="9" fill="var(--gk-accent)"/>
+              </g>
+            </g>
+            <text x="1000" y="545" text-anchor="middle" fill="var(--gk-accent)"
+                  font-family="var(--gk-font-mono)" font-size="26">integration tests</text>
+          </svg>
+          <p class="fragment" data-fragment-index="1" style="margin-top:0.5em; font-size:0.95em;"><strong>The only door that wasn't locked.</strong></p>
+        </div>
+        <aside class="notes">[⏱ 2:01] Now, why? The code was written by computer-vision scientists — brilliant people, not software engineers. And the company knew it — that's why they hired engineers like me: to fix exactly this problem. Except… the code was already there. Brand-new code with legacy architecture: global state all over the place, nothing you could isolate. Classic unit testing? Acceptance tests? Not an option. [CLICK — the third door swings ajar] Integration tests weren't a philosophy. They were the only door that wasn't locked.</aside>
+      </section>
+
+      <!-- ============ S04 · AMPLIFIER · Arrange = whole system ============ -->
+      <section>
+        <div class="gk-frame">
+          <h2>The <em>Arrange</em></h2>
+          <div class="gk-boxrow gk-boxrow-lg" style="margin-top:0.4em;">
+            <div class="gk-box fragment" data-fragment-index="1">services</div>
+            <span class="muted fragment" data-fragment-index="1">+</span>
+            <div class="gk-box fragment" data-fragment-index="2">a database</div>
+            <span class="muted fragment" data-fragment-index="2">+</span>
+            <div class="gk-box fragment" data-fragment-index="3">a model<br><span class="gk-small">wants a GPU</span></div>
+            <span class="muted fragment" data-fragment-index="3">+</span>
+            <div class="gk-box fragment" data-fragment-index="4">a camera</div>
+          </div>
+          <div class="gk-brace fragment" data-fragment-index="5" style="margin-top:0.8em;">start an entire system</div>
+        </div>
+        <aside class="notes">[⏱ 2:36] The first challenge had nothing to do with assertions. In every test you've ever written there's that boring part at the top — the arrange. Here, "arrange" meant: start an entire computer-vision system. [CLICK] Services, [CLICK] a database, [CLICK] a model that wants a GPU — [CLICK] and a camera. [CLICK] All of that, just to get to the point where you can assert anything.</aside>
+      </section>
+
+      <!-- ============ S05 · AMPLIFIER · Code: docker-compose via pytest ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">Arrange: pytest brings the system up</div>
+          <pre><code class="language-python" data-trim data-noescape data-line-numbers="|3|5-8|9">
+@pytest.fixture(scope="session")
+def web_service(docker_services):
+    docker_services.start("web")                 # docker compose up -d
+    port = docker_services.port_for("web", 80)
+    docker_services.wait_until_responsive(       # don't sleep — wait for ready
+        check=lambda: check_url(docker_services.docker_ip, port),
+        timeout=30.0, pause=0.5,
+    )
+    return f"http://{docker_services.docker_ip}:{port}"
+          </code></pre>
+        </div>
+        <aside class="notes">[⏱ 3:07] We made pytest do it. There's a plugin, lovely-pytest-docker. [CLICK] With one line it brings up the whole Docker Compose stack. So the suite doesn't assume the system is running — a fixture starts it. And it doesn't guess with a sleep — [CLICK] it waits until the system is actually responsive. [CLICK] And it hands the test a ready URL. Our arrange is ready — automatically.</aside>
+      </section>
+
+      <!-- ============ S06 · AMPLIFIER · cam_mock (Truman Show) + Honda ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">The real trick: the camera</div>
+          <div class="gk-boxrow gk-boxrow-lg" style="margin-top:0.4em;">
+            <div class="gk-box fragment" data-fragment-index="1">recorded<br>frames</div>
+            <span class="muted fragment" data-fragment-index="1">→</span>
+            <div class="gk-box fragment" data-fragment-index="1"><code>cam_mock</code></div>
+            <span class="muted fragment" data-fragment-index="2">→</span>
+            <div class="gk-box fragment" data-fragment-index="2">"live"<br>stream</div>
+            <span class="muted fragment" data-fragment-index="2">→</span>
+            <div class="gk-box fragment" data-fragment-index="2">system</div>
+          </div>
+          <p class="fragment" data-fragment-index="3" style="margin-top:0.9em; font-size:0.9em;"><strong>The system doesn't know it's watching the past.</strong></p>
+          <div class="fragment" data-fragment-index="4" style="margin-top:0.5em; font-family:var(--gk-font-mono); color:var(--gk-muted); font-size:0.6em; letter-spacing:0.15em;">[ WED · 4 PM ]</div>
+        </div>
+        <div class="gk-overlay gk-honda fragment" data-fragment-index="5">
+          <img class="car" src="./img/honda-real.png" alt="a black Honda pulls in">
+        </div>
+        <aside class="notes">[⏱ 3:51] But the real trick was the camera. You can't test against a live camera — live cars don't reproduce. [CLICK] So instead of the camera there's cam_mock: a small service that replays frames recorded from the real cameras, [CLICK] as a live stream, at real speed, into the system under test. [CLICK] And the system doesn't know it's watching the past. [CLICK] It thinks it's Wednesday afternoon. The system is up, [CLICK] and a black Honda just pulled in in our tests.</aside>
+      </section>
+
+      <!-- ============ S07 · PAYOFF · timeout-minutes: 2880 ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-yaml">
+            <div><span class="gk-accent">timeout-minutes:</span> 10<span class="cmt">        # a reasonable test suite</span></div>
+            <div class="fragment" data-fragment-index="1"><span class="gk-accent">timeout-minutes:</span> <span class="big">2880</span><span class="cmt">   # this one</span></div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 4:49] Was it fast? No. This is not a suite you run from a pre-commit hook. It runs on a self-hosted GPU runner. A reasonable test suite has a timeout like this — ten minutes. [CLICK] Ours? The CI timeout is set to two thousand eight hundred and eighty. [pause — let the room do the 2880/60 math themselves; that's the joke] That's forty-eight hours. Hours, not minutes.</aside>
+      </section>
+
+      <!-- ============ S08 · PAYOFF · Billboard: startable ============ -->
+      <section class="gk-billboard">
+        <div class="gk-frame gk-lines">
+          <h2>
+            <span class="l">Your system doesn't have to be small.<br></span>
+            <span class="l fragment" data-fragment-index="1" style="margin-top:0.6em; font-size:0.8em;">It has to be <strong>startable</strong>.</span>
+          </h2>
+        </div>
+        <aside class="notes">[⏱ 5:30] If you steal one thing from this section: your system doesn't have to be small to be testable. [CLICK] It has to be startable. Build your services so they start locally with one command — from day one. It pays off in tests, in development, in deployment. And honestly, it saved this whole story. If setting it up took dozens of hours of configuration, that integration tests door would have been locked too.[after this — half a second of silence, a breath, then into Challenge 2]</aside>
+      </section>
+
+      <!-- ============ S09a · AMPLIFIER · What already works ✓✓✓ + "but…" ============ -->
+      <section class="gk-tally">
+        <div class="gk-frame">
+          <div class="gk-line">the system starts itself <span class="gk-accent">✓</span></div>
+          <div class="gk-line fragment" data-fragment-index="1">the recording plays <span class="gk-accent">✓</span></div>
+          <div class="gk-line fragment" data-fragment-index="2">the tests run <span class="gk-accent">✓</span></div>
+          <div class="gk-line fragment" data-fragment-index="3" style="margin-top:0.5em;"><strong>but…</strong></div>
+        </div>
+        <aside class="notes">[⏱ 6:24] So — look how far we've got. The system starts itself, with one command. [CLICK] The recording plays, cars drive in. [CLICK] The tests run against it. Time to assert. Great, right? [CLICK] But… [transition — the "10 minutes later" card]</aside>
+      </section>
+
+      <!-- ============ S09 · PAYOFF · The "…later" card ============ -->
+      <section class="gk-later">
+        <div class="gk-frame" style="align-items:center;">
+          <div class="gk-swap-grid" style="justify-items:center;">
+            <div class="fragment fade-out" data-fragment-index="1"><span class="card"><small>meanwhile</small>10 minutes later…</span></div>
+            <div class="fragment fade-in" data-fragment-index="1"><span class="card"><small>meanwhile</small>24 hours later…</span></div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 6:41] The first version we built did the obvious thing: play the whole recording, collect everything the system reported, and check it all at the end. It worked. But a recording runs ten minutes. So when the very first car, in the first thirty seconds, got a wrong plate, we found out ten minutes later. [CLICK] And some recordings run twenty-four hours. So the goal was simple to say and hard to build: feedback in thirty seconds, not ten minutes.</aside>
+      </section>
+
+      <!-- ============ S10 · AMPLIFIER · Code: @parametrize and its limit ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">Why not just @parametrize?</div>
+          <pre><code class="language-python" data-trim data-noescape data-line-numbers="|5,9|3" data-fragment-index="1">
+import pytest
+
+CARS = ["car1", "car2", "car3", "car4", "car5"]
+
+@pytest.mark.parametrize("car", CARS)
+def test_color(car):
+    assert car in CARS
+
+@pytest.mark.parametrize("car", CARS)
+def test_plate(car):
+    assert car in CARS
+          </code></pre>
+          <p class="fragment gk-bad-text" data-fragment-index="3" style="font-family:var(--gk-font-mono); font-size:0.6em; margin-top:0.3em;">✗ static — frozen the moment Python imports the file. Can't read runtime config.</p>
+        </div>
+        <aside class="notes">[⏱ 7:23] First, we broke that one giant end-of-recording check into many tiny tests — one assertion each. One for the plate. One for the color. One for the direction. Then we ran each of them for every car. Now, in such cases you would normally use @pytest.mark.parametrize. [CLICK] We started there too. But parametrize is a decorator. [CLICK] Its values are frozen the moment Python imports the file — a static list, sitting above the function. [CLICK] We didn't want a static list. We wanted to choose which recordings to run at runtime — from a cases file, from a command-line flag. And we wanted to feed two different fixtures at two different scopes: one per car, one per recording. A decorator can't reach runtime config like that.</aside>
+      </section>
+
+      <!-- ============ S11 · AMPLIFIER · pytest's basement: pytest_generate_tests ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">One level down — into pytest's basement</div>
+          <pre class="fragment fade-in" data-fragment-index="1"><code class="language-python" data-trim data-noescape data-line-numbers="1|2|4|5-6|8-10" data-fragment-index="2">
+def pytest_generate_tests(metafunc):
+    recording_cases, vehicle_cases = load_cases(...)   # our cases live in JSON
+
+    if "vehicle_case" in metafunc.fixturenames:        # scope: ONE car
+        metafunc.parametrize("vehicle_case", vehicle_cases,
+                             ids=id_from_vehicle, indirect=True)
+
+    if "recording_case" in metafunc.fixturenames:      # scope: WHOLE recording
+        metafunc.parametrize("recording_case", recording_cases,
+                             ids=id_from_recording, indirect=True)
+          </code></pre>
+          <div class="gk-sig fragment fade-in" data-fragment-index="6">
+            <div class="head"># the test picks its scope by signature alone — no decorators:</div>
+            <div><span class="kw">def</span> test_vehicle_has_correct_plate(<span class="fragment gk-hl" data-fragment-index="7">vehicle_case</span>, first_sighting): ...</div>
+            <div><span class="kw">def</span> test_no_misses_extras_or_late(<span class="fragment gk-hl" data-fragment-index="8">recording_case</span>, recording_stopped): ...</div>
+          </div>
+        </div>
+        <div class="gk-overlay fragment fade-out" data-fragment-index="1" style="background:var(--gk-bg);">
+          <div style="text-align:center;">
+            <img src="./img/basement.jpg" alt="Stairs descending into a pitch-black basement; a glowing pytest logo shines in the darkness below" style="height:880px; width:auto; max-width:none;">
+            <div class="gk-codehead" style="margin-top:0.6em;">pytest's basement</div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 8:23] So we went one level down — into pytest's basement — to the hook that parametrize itself is built on: pytest_generate_tests. [CLICK — the image disappears, revealing the code with the glowing hook signature] It manufactures test instances from data at collection time. [CLICK] Our cases live in JSON — a recording, and the cars we expect. [CLICK] Then the first question: does this test want a vehicle_case? If it does — [CLICK] we parametrize it with the cases we just loaded, and indirect=True just means the JSON entry arrives as a ready-made fixture, not a raw value. [1–2 s pause — let the back of the room catch up] [CLICK] And the second block is the same move with a different scope: recording_case — once per whole recording, not per car. [CLICK] And a test picks its world by its signature alone, without decorator [CLICK] This test asks for vehicle_case, so it runs once per car. [CLICK] This one asks for recording_case, so it runs once for the whole recording. Same file, two scopes, chosen by signature. This genuinely helped — but not with speed. It helped with legibility: instead of one failure screaming "something in this recording is wrong," the report now said exactly: this car, this plate, wrong.</aside>
+      </section>
+
+      <!-- ============ S12 · TEASER · Output: default order ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">Here's what pytest does by default</div>
+          <pre style="font-size:0.5em;"><code class="language-text" data-trim data-noescape data-line-numbers="|1-5|6-10" data-fragment-index="1">
+test_cars.py::test_color[car1]
+test_cars.py::test_color[car2]
+test_cars.py::test_color[car3]
+test_cars.py::test_color[car4]
+test_cars.py::test_color[car5]
+test_cars.py::test_plate[car1]
+test_cars.py::test_plate[car2]
+test_cars.py::test_plate[car3]
+test_cars.py::test_plate[car4]
+test_cars.py::test_plate[car5]
+          </code></pre>
+          <p class="fragment" data-fragment-index="3" style="font-family:var(--gk-font-mono); font-size:0.5em; color:var(--gk-muted); margin-top:0.4em;">10 tests collected — ordered by function, not by car</p>
+        </div>
+        <aside class="notes">[⏱ 10:02] Because here's what pytest does by default. It runs test by test: [CLICK] test_color for car one, car two, three… all of them. [CLICK] Then test_plate for car one, two, three. [CLICK] Look at the output — it is ordered by function, not by car. Which means: to check the first plate, you still watch the whole thing. We'd made the report beautiful and left the feedback exactly as slow as before.</aside>
+      </section>
+
+      <!-- ============ S13 · AMPLIFIER · Diagram: pytest's cycle ============ -->
+      <section>
+        <div class="gk-frame">
+          <h2 style="font-size:1.2em;">pytest's startup sequence</h2>
+          <div class="gk-boxrow" style="margin-top:0.5em; align-items:stretch; font-size:1.45em; gap:0.4em;">
+            <div class="gk-box fragment" data-fragment-index="1">configure<br><span class="gk-small">config + plugins</span></div>
+            <span class="muted fragment" data-fragment-index="2">→</span>
+            <div class="gk-box fragment" data-fragment-index="2">collect<br><span class="gk-small gk-accent">pytest_generate_tests</span></div>
+            <span class="muted fragment" data-fragment-index="3">→</span>
+            <div class="gk-box fragment" data-fragment-index="3" style="border-color:var(--gk-accent); border-width:4px;">modifyitems<br><span class="gk-small gk-accent">pytest_collection_modifyitems</span></div>
+            <span class="muted fragment" data-fragment-index="4">→</span>
+            <div class="gk-box fragment" data-fragment-index="4">run<br><span class="gk-small">our order</span></div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 10:50] So we reordered. But to see how, you need pytest's startup sequence. [CLICK] First, pytest configures itself. [CLICK] Then it collects — we just saw pytest_generate_tests. [CLICK] And then, after everything is collected but before a single test runs, pytest offers another hook: pytest_collection_modifyitems. It hands you the complete list of items and says: rearrange it however you like. [CLICK] And only then does it run.x</aside>
+      </section>
+
+      <!-- ============ S14 · AMPLIFIER · Code: modifyitems + empty fixture ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">Group by recording · live first, end last</div>
+          <pre><code class="language-python" data-trim data-noescape data-line-numbers="|5|6-9|10,13|1-3">
+@pytest.fixture
+def recording_stopped():
+    pass  # empty fixture = a phase marker: "I run after the movie ends"
+
+def pytest_collection_modifyitems(session, config, items):
+    grouped = defaultdict(lambda: {"live": [], "end": []})
+    for item in items:
+        case = item.callspec.params.get("vehicle_case") \
+            or item.callspec.params.get("recording_case")
+        phase = "end" if "recording_stopped" in item.fixturenames else "live"
+        grouped[case.recording][phase].append(item)
+
+    items[:] = chain(*[[*g["live"], *g["end"]] for g in grouped.values()])
+          </code></pre>
+        </div>
+        <aside class="notes">[⏱ 11:38] [CLICK] Here's the hook itself. [CLICK] We group everything by recording. [CLICK] Live tests, asserting during playback, goes first - to live bucket; end tests, like statistics, last. [CLICK] And the boundary between the phases is marked by an empty fixture — recording_stopped has no body at all. It exists so a test can say "I run after the movie ends," again just by its signature.</aside>
+      </section>
+
+      <!-- ============ S15 · PAYOFF · Heresy ============ -->
+      <section class="gk-billboard">
+        <div class="gk-frame gk-lines">
+          <h2>
+            <span class="l">Every pytest tutorial says:<br>a test must assert.</span>
+            <span class="l fragment" data-fragment-index="1" style="margin-top:0.5em;"><strong>Half of this suite disagrees.</strong></span>
+          </h2>
+        </div>
+        <aside class="notes">[⏱ 12:17] One heresy while we're here: some of items here are empty. We have recording_stopped fixture, and  test_start_recording that asserts nothing, and test_wait_for_recording_stop that just waits. Every pytest tutorial says a test must assert. [CLICK] Half of this suite disagrees — and in exchange, every lifecycle step shows up in the report with its own timing and status, for free.</aside>
+      </section>
+
+      <!-- ============ S16 · AMPLIFIER · Output AFTER reorder ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">After modifyitems: the tests come alive</div>
+          <pre style="font-size:0.5em;"><code class="language-text" data-trim data-noescape data-line-numbers="|1|2-3|4-5|1,12" data-fragment-index="1">
+test_cars.py::test_start_recording[rec1]
+test_cars.py::test_color[car1]
+test_cars.py::test_plate[car1]
+test_cars.py::test_color[car2]
+test_cars.py::test_plate[car2]
+test_cars.py::test_color[car3]
+test_cars.py::test_plate[car3]
+test_cars.py::test_color[car4]
+test_cars.py::test_plate[car4]
+test_cars.py::test_color[car5]
+test_cars.py::test_plate[car5]
+test_cars.py::test_wait_for_recording_stop[rec1]
+          </code></pre>
+        </div>
+        <aside class="notes">[⏱ 12:45] Now put it together, and something beautiful happens in your terminal. You run pytest, [CLICK] the recording starts — and the tests come alive. [CLICK] A car enters: its checks light up, one by one. [CLICK] Next car — check its colour and plate. [CLICK] And notice the first and the last line: test_start_recording opens the show, test_wait_for_recording_stop closes it — the lifecycle phases sit right there in the output, like every other item.</aside>
+      </section>
+
+      <!-- ============ S17 · TEASER · assert count == 1 ============ -->
+      <section>
+        <div class="gk-frame" style="align-items:flex-start;">
+          <div class="gk-codehead">the world I came from</div>
+          <div style="position:relative; display:inline-block;">
+            <pre><code class="language-python" data-trim data-noescape>assert user_count == 1</code></pre>
+            <div class="fragment" data-fragment-index="2" style="position:absolute; left:0; top:50%; width:100%; height:6px; background:var(--gk-accent-2); transform:translateY(-50%) rotate(-2deg);"></div>
+          </div>
+          <p class="muted fragment" data-fragment-index="1" style="margin-top:0.6em;">the world where <em>correct</em> means <em>equal</em></p>
+        </div>
+        <aside class="notes">[⏱ 13:39] So the system runs, the tests are live, the report is beautiful. And now the next challenge — the one that had nothing to do with pytest. For years, people had called me "the testing guy." I had opinions about assertions. And my assertions looked like this: you add a user, you assert the count is exactly one. [CLICK] That was the world I came from. The world where correct means equal. So when I started, I did the natural thing: I asserted everything. The plate must match. The color must match. The make must match. Exactly. And the tests failed. Constantly. Not because the system was broken — the system was doing its job, about eighty-five percent of the time and test didn't reflect that. [CLICK] I needed to unlear that count-equals-one — accepting that "correct" could be a percentage, and building tests that agreed.</aside>
+      </section>
+
+      <!-- ============ S18 · PAYOFF · "I lied." — callback S02 ============ -->
+      <section>
+        <div class="gk-frame" style="align-items:center; justify-content:center;">
+          <h1 class="fragment" data-fragment-index="1" style="font-size:2.4em;">I lied.</h1>
+          <div class="gk-swap-grid" style="justify-items:center; margin-top:0.4em; width:100%;">
+            <pre class="fragment fade-out" data-fragment-index="2" style="width:auto;"><code class="language-python" data-trim data-noescape>def test_car_has_correct_color(car_case, first_sighting):
+    assert first_sighting["color"] == car_case.current.color</code></pre>
+            <pre class="fragment fade-in" data-fragment-index="2" style="width:auto;"><code class="language-python" data-trim data-noescape>def test_car_has_correct_color(car_case, first_sighting):
+    if first_sighting["color"] != car_case.current.color:
+        warnings.warn("Wrong color")   # it cannot fail the build</code></pre>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 15:01] Let me take you back to my very first slide. The color test — assert color equals expected. Clean. Simple. [pause — the opener code stays up] [CLICK] I lied. [then ~1.5 s of silence] [CLICK] In the real repository, that test does not assert anything. It looks like this: warnings.warn, "Wrong color". It cannot fail the build. And that's not laziness — it was the shift in how I think about correctness. Expecting "silver" does not mean the model has to say "silver." At night, or on a filthy car, silver reads as grey — and that's fine, because the color was only a hint. What actually mattered was the plate. And here's the part that really broke my brain: even the plate didn't have to match a hundred percent. That was a real business requirement — and somehow the tests had to encode it.</aside>
+      </section>
+
+      <!-- ============ S19 · AMPLIFIER · Spectrum ladder (levels 1-2) ============ -->
+      <section>
+        <div class="gk-frame">
+          <h2 style="font-size:1.2em;">4 Levels of Trust</h2>
+          <div class="gk-ladder">
+            <div class="swap">
+              <div class="rung q fragment fade-out" data-fragment-index="1"><span class="lvl">1 · ?</span>&nbsp;</div>
+              <div class="rung hard full fragment fade-in" data-fragment-index="1"><span class="lvl gk-accent">1 · hard assert</span>direction · timing · plate (≤1 char off)</div>
+            </div>
+            <div class="swap">
+              <div class="rung q fragment fade-out" data-fragment-index="2"><span class="lvl">2 · ?</span>&nbsp;</div>
+              <div class="rung warn full fragment fade-in" data-fragment-index="2"><span class="lvl gk-bad-text">2 · warnings.warn</span>color · make · model</div>
+            </div>
+            <div class="rung q"><span class="lvl">3 · ?</span>&nbsp;</div>
+            <div class="rung q"><span class="lvl">4 · ?</span>&nbsp;</div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 16:08] So I sorted every check into a spectrum of trust — four levels. [CLICK] At the top — the things that must be exactly right. Which way did the car go, in or out? There's no "about." The timing, within a couple of seconds. And the plate — though even the plate has a human tolerance: an edit distance of one. One character wrong — fine. Two — that's a failure. Hard assert. [CLICK] Below that — the things that are only true-ish. Color, make, model. I don't assert them. I warn. Because a silver car in morning light is white. A silver car that's filthy is brown. If I failed the build every time the model called a dirty silver car "grey," the build would never be green.</aside>
+      </section>
+
+      <!-- ============ S20 · AMPLIFIER · Valet ticket ============ -->
+      <section>
+        <div class="gk-split">
+          <div class="gk-frame">
+            <div>
+              <div class="gk-ticket">
+                <div class="row hl"><span class="k">PLATE</span><span class="v">BHA-215</span></div>
+                <div class="row hl2"><span class="k">COLOR</span><span class="v">navy</span></div>
+                <div class="row hl2"><span class="k">MAKE</span><span class="v">Honda</span></div>
+                <div class="row"><span class="k">TIME IN</span><span class="v">16:05</span></div>
+              </div>
+            </div>
+            <div>
+              <p class="fragment" data-fragment-index="1"><span class="gk-accent">PLATE</span> = the bill.</p>
+              <p class="fragment" data-fragment-index="2"><span class="gk-bad-text">COLOR · MAKE</span> = a hint.<br><span class="gk-small">nobody ever corrected those</span></p>
+              <p class="fragment" data-fragment-index="3" style="margin-top:0.5em;"><strong>The business, copied into assertions.</strong></p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 17:08] Now — why this spectrum? In those garages you drive up to a booth. A camera reads your plate, and an attendant hands you a ticket — plate, color, make, time in. Then they park your car. You come back, hand over the ticket, pay, and they bring it around. So think about what each field is for. [CLICK] The plate is the bill — that's how the money is tied to the car. If the system gets one character wrong, the attendant fixes it on the spot. [CLICK] But the color and the make? Those are just hints — so a human can find your car. Nobody ever corrected those. If the ticket said "silver" and the car was grey, they found it anyway. My spectrum of trust wasn't a clever testing pattern. [CLICK] It was the business, copied into assertions. Hard-assert what the company bills for. Warn about what only helps a human. Measure the rest.</aside>
+      </section>
+
+      <!-- ============ S21 · AMPLIFIER · git timeline + cliffhanger ============ -->
+      <section>
+        <div class="gk-frame">
+          <h2 style="font-size:1.1em;">The suite learned to trust less — one assert at a time</h2>
+          <div class="gk-codehead" style="margin-top:0.3em;">git · Jul 30, 2021</div>
+          <pre style="font-size:0.55em;"><code class="language-diff" data-trim data-noescape>
+- assert first_sighting["color"] == case.color
++ warnings.warn("Wrong color")
+          </code></pre>
+          <div class="fragment" data-fragment-index="1">
+            <div class="gk-codehead" style="margin-top:0.5em;">git · Oct 4, 2021</div>
+            <pre style="font-size:0.55em;"><code class="language-diff" data-trim data-noescape>
+- assert first_sighting["make"] == case.make
+- assert first_sighting["model"] == case.model
++ warnings.warn("Wrong make or model")
+          </code></pre>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 18:38] And I didn't get there in one go. You can watch it happen in the git history. This is a real diff from July — the color assertion becomes a warning. [CLICK] And in October, make and model follow. The suite learned to trust less — one assert at a time.</aside>
+      </section>
+
+      <!-- ============ S22 · TEASER · Two cars, one second ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-boxrow" style="gap:2em; align-items:center;">
+            <h1 class="gk-bad-text" style="font-size:1.8em;">2 tests: FAILED</h1>
+            <p class="muted fragment" data-fragment-index="1" style="font-size:0.8em;">both cars detected perfectly ✓</p>
+          </div>
+          <div class="fragment" data-fragment-index="2" style="margin-top:0.8em;">
+            <div class="gk-box" style="display:inline-block; padding:0.6em 2.5em;">a wide entrance — two cars, side by side</div>
+          </div>
+          <div class="fragment" data-fragment-index="3" style="margin-top:0.8em; font-family:var(--gk-font-mono); font-size:0.7em;">
+            <span class="gk-accent">expected: [A, B]</span> &nbsp; vs &nbsp; <span class="gk-bad-text">reported: [B, A]</span> &nbsp;&nbsp;<span class="muted">— the order flips</span>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 19:16] And for a while, life was good. The recording plays, cars drive in, tests light up green — car by car, live. It felt solved. Then one day: two tests, dead red, on a completely ordinary recording. I open the report. [CLICK] Two cars — and both of them detected perfectly. Every field correct. So what failed? [CLICK] Here's what: some garages have wide entrances. Two cars can roll in side by side, in the same second. And I had quietly assumed the system reports cars in the same order — always. [CLICK] It doesn't. It's nondeterministic — a classic race condition, the same kind you can hit in a regular REST project.</aside>
+      </section>
+
+      <!-- ============ S23 · AMPLIFIER · Code: first_sighting — escalation ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">first_sighting: it escalates</div>
+          <pre><code class="fragment language-python" data-trim data-noescape data-line-numbers="1-2|4|5|6|7|11">
+@pytest.fixture
+def first_sighting(event_store, vehicle_case, start_recording):
+
+    for search in (by_plate(tolerance=1),   # first: plate almost exact
+                   by_plate(tolerance=2),   # then: allow two wrong chars
+                   by_time):                # last resort: nearest in time
+        sighting = wait_until(search, timeout=remaining_recording_time())
+        if sighting:
+            return sighting
+
+    assert False, f"No sighting for {vehicle_case.current.plate}"
+          </code></pre>
+        </div>
+        <aside class="notes">
+          [⏱ 20:13] So instead of comparing sequences, we started matching. It happens twice in this suite — once live, once at the end. When live, during playback test ask "hey where is my car?" [CLICK] There's a fixture called first_sighting.
+           [CLICK] First we try to find an event by plate, allowing one wrong character. [CLICK] Nothing? Loosen it — two wrong characters. [CLICK] Still nothing? Last resort: the nearest unclaimed event in time. [CLICK] And it doesn't give up early — it keeps trying as long as the recording is still running. [CLICK] And if nothing — then we fail.</aside>
+      </section>
+
+      <!-- ============ S24 · AMPLIFIER · Baggage carousel ============ -->
+      <section>
+        <div class="gk-split gk-split-even">
+          <div class="gk-frame">
+            <div class="gk-shot" style="overflow:hidden; border-radius:8px;">
+              <img src="./img/carousel.jpg" alt="Airport baggage carousel with several suitcases on the belt; the one in front is highlighted as yours">
+              <div class="gk-ring fragment" data-fragment-index="2" style="left:19%; top:40%; width:46%; height:41%; border-color:var(--gk-accent); box-shadow:0 0 0 9999px rgba(8,10,14,0.55);"></div>
+            </div>
+            <div>
+              <p class="fragment" data-fragment-index="1">Three suitcases are circling.</p>
+              <p class="fragment" data-fragment-index="2"><span class="gk-accent">You take yours</span> — check it, move on.</p>
+              <p class="fragment muted" data-fragment-index="3">Not yours? Someone else will claim it.</p>
+              <p class="fragment" data-fragment-index="4" style="margin-top:0.4em;"><strong>Each test waits for <em>its</em> car.</strong></p>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 21:22] It's like an airport carousel. [CLICK] Three suitcases are circling the belt. You're waiting for yours — [CLICK] so you take it, check it's intact, nothing's missing, nobody opened it, and you move on. [CLICK] The others? Not yours. Someone else will claim them. [CLICK] And that's literally how the suite works: the system may have already reported two or three cars, but each test waits for its car, runs its checks — and leaves the rest on the belt, for the tests that expect them.</aside>
+      </section>
+
+      <!-- ============ S25 · AMPLIFIER · Code: the cost of matching (Hungarian) ============ -->
+      <section>
+        <div class="gk-frame">
+          <div class="gk-codehead">Cars Matchmaking</div>
+          <pre class="fragment fade-in" data-fragment-index="1"><code class="language-python" data-trim data-noescape data-line-numbers="13|12|5,9-10|2-3,6-7" data-fragment-index="2">
+def _weight(expected, received):
+    if expected.direction != received.direction:
+        return MAX_WEIGHT                       # irreconcilable
+
+    distance = edit_distance(expected.plate, received.last_plate)
+    if distance > MAX_EDIT_DISTANCE:
+        return MAX_WEIGHT
+
+    lateness = max(0, abs(received.frame_time - expected.appear_at) - 2_000)
+    return distance + lateness / 10_000         # 10 seconds late = 1 typo
+
+cost_matrix = [[_weight(e, r) for r in received] for e in expected]
+rows, cols = linear_sum_assignment(cost_matrix)   # Hungarian algorithm (scipy)
+          </code></pre>
+          <p class="fragment" data-fragment-index="6" style="font-size:0.85em; margin-top:0.2em;"><strong>10 seconds late = 1 typo.</strong> <span class="gk-small">MAX_WEIGHT = simply forbidden.</span></p>
+        </div>
+        <aside class="notes">[⏱ 22:04] Then, after the recording ends, the real matching runs — the one that produces statistics. And here we didn't invent anything. [CLICK — the code appears] We imported it: scipy.optimize.linear_sum_assignment. The Hungarian algorithm — born 1955, and it's essentially a matchmaking service: expected cars on one side, reported events on the other; every possible pairing gets a price; the algorithm finds the cheapest total marriage. The interesting part is the price. [CLICK] All the prices live in a cost matrix — one row per expected car, one column per reported event — [CLICK] and each cell gets its _weight, which is essentially one line: the number of wrong characters in the plate, plus the delay in milliseconds divided by ten thousand. Which quietly sets an exchange rate: ten seconds of lateness costs the same as one typo. [CLICK] And some pairings are simply forbidden — priced out entirely — wrong direction, plate too different — The algorithm can marry anyone, but not those two. [CLICK]</aside>
+      </section>
+
+      <!-- ============ S26 · AMPLIFIER · Misses · Extras · Late ============ -->
+      <section class="gk-tally">
+        <div class="gk-frame">
+          <div class="gk-line fragment" data-fragment-index="1">expected, no event &nbsp;→&nbsp; <strong>misses</strong></div>
+          <div class="gk-line fragment" data-fragment-index="2">event, no car &nbsp;→&nbsp; <strong>extras</strong> <span class="gk-small">(the ghosts)</span></div>
+          <div class="gk-line fragment" data-fragment-index="3">matched, too slow &nbsp;→&nbsp; <strong>late</strong></div>
+        </div>
+        <aside class="notes">[⏱ 23:23] Whatever the algorithm cannot pair becomes one of two numbers. [CLICK] Expected cars with no event: misses. [CLICK] Events but no expected car: extras — the ghosts. [CLICK] Pairs matched, but too slow: late.</aside>
+      </section>
+
+      <!-- ============ S27a · AMPLIFIER · Ladder returns full-screen: level 3 (auto-animate → code) ============ -->
+      <section class="gk-ladder-return" data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-mini-ladder big" data-id="spectrum-ladder">
+            <div class="rung">1 · hard assert</div>
+            <div class="rung">2 · warn</div>
+            <div class="swap">
+              <div class="rung q fragment fade-out" data-fragment-index="1">3 · ?</div>
+              <div class="rung on full fragment fade-in" data-fragment-index="1">3 · per recording</div>
+            </div>
+            <div class="rung q">4 · ?</div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 23:39] And — remember the four levels of the spectrum? [CLICK — rung 3 fills in] Here is the third one: per recording — statistics for a single recording. [TRANSITION — the ladder slides into the corner]</aside>
+      </section>
+
+      <!-- ============ S27 · AMPLIFIER · Code: level 3 — ladder in the corner ============ -->
+      <section data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-codehead">Level 3 — statistics per recording</div>
+          <pre><code class="language-python" data-trim data-noescape data-line-numbers="|3|5|8-9|8-13|4,6">
+from pytest_check import check          # soft asserts — test runs to the end
+
+def test_no_misses_extras_or_late(recording_case, event_store,
+                                  recording_stopped, results_bag):
+    stats = calculate_misses_extras_and_late(expected, received)
+    results_bag.statistics = stats      # collect — the report comes later
+
+    with check:
+        assert stats.misses == [], f"{len(stats.misses)} missed"
+    with check:
+        assert stats.extras == [], f"{len(stats.extras)} ghosts"
+    with check:
+        assert stats.late  == [], f"{len(stats.late)} late"
+          </code></pre>
+        </div>
+        <div class="gk-mini-ladder" data-id="spectrum-ladder">
+          <div class="rung">1 · hard assert</div>
+          <div class="rung">2 · warn</div>
+          <div class="rung on">3 · per recording</div>
+          <div class="rung q">4 · ?</div>
+        </div>
+        <aside class="notes">[⏱ 23:49] Level three, in code, looks like this: [CLICK] test_no_misses_extras_or_late one run per recording. [CLICK] We call The Hungarian algorithm [CLICK] And assert missing with soft checks using the pytest-check plugin. [CLICK] Soft on purpose — a failing miss must not hide the extras or late. [CLICK] And as the recording plays, every statistic lands in a shared results bag — a fixture from pytest-harvest that lets us share data between tests.</aside>
+      </section>
+
+      <!-- ============ S27b · AMPLIFIER · Callback of warnings: trend (auto-animate — ladder stays in the corner) ============ -->
+      <section data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-codehead">Remember the warnings?</div>
+          <pre style="width:auto;"><code class="language-python" data-trim data-noescape>def test_car_has_correct_color(car_case, first_sighting):
+    if first_sighting["color"] != car_case.current.color:
+        warnings.warn("Wrong color")   # it cannot fail the build</code></pre>
+          <p class="fragment gk-bad-text" data-fragment-index="1" style="font-size:1.1em; margin-top:0.8em;"><strong>But a warning cannot catch the trend.</strong></p>
+        </div>
+        <div class="gk-mini-ladder" data-id="spectrum-ladder">
+          <div class="rung">1 · hard assert</div>
+          <div class="rung on">2 · warn</div>
+          <div class="rung">3 · per recording</div>
+          <div class="rung q">4 · ?</div>
+        </div>
+        <aside class="notes">[⏱ 24:19] Before the last level, remember the warnings? One wrong color — a warning, fine. But if the model started getting every color slightly wrong. A warning catches the single mistake. [CLICK] but It cannot catch the trend. So how do you catch the trend? [transition — the ladder returns to full screen]</aside>
+      </section>
+
+      <!-- ============ S28a · AMPLIFIER · Ladder returns full-screen: level 4 (auto-animate ← code 3, → code 4) ============ -->
+      <section class="gk-ladder-return" data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-mini-ladder big" data-id="spectrum-ladder">
+            <div class="rung">1 · hard assert</div>
+            <div class="rung">2 · warn</div>
+            <div class="rung">3 · per recording</div>
+            <div class="swap">
+              <div class="rung q fragment fade-out" data-fragment-index="1">4 · ?</div>
+              <div class="rung on full fragment fade-in" data-fragment-index="1">4 · aggregate</div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 24:50] The answer is level four [CLICK] aggregate</aside>
+      </section>
+
+      <!-- ============ S28 · AMPLIFIER · Code: level 4 — favorite test (bar 85%) ============ -->
+      <section id="s28">
+        <div class="gk-frame">
+          <div class="gk-codehead">Level 4 — my favorite test: it tests no car at all</div>
+          <pre data-id="l4-code"><code class="language-python" data-trim data-noescape data-line-numbers="|3|4-9|11-12">
+from pytest_harvest import get_fixture_store   # store from every test
+
+def test_accuracy(request, reports_path):
+    store = get_fixture_store(request)         # all the results_bags
+    stats_by_recording = {
+        bag["recording"]: bag["statistics"]
+        for bag in store["results_bag"].values() if "statistics" in bag
+    }
+    print(summary_report(stats_by_recording))  # table per recording + TOTAL
+
+    total = sum(stats_by_recording.values(), Statistics())
+    assert total.accuracy >= 0.85, f"{total.accuracy:.0%} below the 85% bar"
+          </code></pre>
+          <!-- placeholder: reserves the height of the S28b payoff so auto-animate morphs ONLY 0.85→0.90 (code at the same height) -->
+          <p aria-hidden="true" style="font-size:0.85em; margin-top:0.2em; visibility:hidden;"><strong>One wrong color: a warning. A trend: a failed build.</strong></p>
+
+        </div>
+        <div class="gk-mini-ladder" data-id="spectrum-ladder">
+          <div class="rung">1 · hard assert</div>
+          <div class="rung">2 · warn</div>
+          <div class="rung">3 · per recording</div>
+          <div class="rung on">4 · aggregate</div>
+        </div>
+        <aside class="notes">[⏱ 25:00] In code: [CLICK] test_accuracy  runs last. [CLICK] It reads the accumulated statistics from the entire run — every car, every recording — [CLICK] and asserts one number: the percentage. We started the bar exactly where the system was — eighty-five. [TRANSITION — morph 0.85 → 0.90]</aside>
+      </section>
+
+      <!-- ============ S28b · PAYOFF · Bar raised: 0.85 → 0.90 (auto-animate morph of one line) ============ -->
+      <section id="s28b">
+        <div class="gk-frame">
+          <div class="gk-codehead">Level 4 — my favorite test: it tests no car at all</div>
+          <pre data-id="l4-code"><code class="language-python" data-trim data-noescape data-line-numbers="11-12">
+from pytest_harvest import get_fixture_store   # store from every test
+
+def test_accuracy(request, reports_path):
+    store = get_fixture_store(request)         # all the results_bags
+    stats_by_recording = {
+        bag["recording"]: bag["statistics"]
+        for bag in store["results_bag"].values() if "statistics" in bag
+    }
+    print(summary_report(stats_by_recording))  # table per recording + TOTAL
+
+    total = sum(stats_by_recording.values(), Statistics())
+    assert total.accuracy >= 0.90, f"{total.accuracy:.0%} below the 90% bar"
+          </code></pre>
+          <p class="fragment" data-fragment-index="1" style="font-size:0.85em; margin-top:0.2em;"><strong>One wrong color: a warning. A trend: a failed build.</strong></p>
+        </div>
+        <div class="gk-mini-ladder" data-id="spectrum-ladder">
+          <div class="rung">1 · hard assert</div>
+          <div class="rung">2 · warn</div>
+          <div class="rung">3 · per recording</div>
+          <div class="rung on">4 · aggregate</div>
+        </div>
+        <aside class="notes">[⏱ 25:18] And when the system got better? We raised the bar to ninety — one number, in one place, and the whole suite demands more from every deploy. [CLICK] One wrong color is a warning. A trend of wrong colors fails the build. That's how you catch a system quietly falling apart.</aside>
+      </section>
+
+      <!-- ============ S30 · AMPLIFIER · Zoom out: numbers ============ -->
+      <section class="gk-tally">
+        <div class="gk-frame">
+          <h2 style="font-size:1.2em; margin-bottom:0.4em;">What we actually built</h2>
+          <div class="gk-line">test file: <span class="n">401</span> lines · <span class="n">21</span> tests</div>
+          <div class="gk-line fragment" data-fragment-index="1">conftest: <span class="n">744</span> lines <span class="gk-small">— 2× more infrastructure, on purpose</span></div>
+          <div class="gk-line fragment" data-fragment-index="2">× double parametrization · <span class="n">203</span> recordings · <span class="n">2 713</span> events → <span class="n gk-accent">~39 000</span> test items</div>
+          <div class="gk-line fragment" data-fragment-index="3" style="margin-top:0.4em;">…from <strong>four pages</strong> of code.</div>
+        </div>
+        <aside class="notes">[⏱ 25:41] Let's zoom out and look at what we actually built. The entire test file is four hundred and one lines. Twenty-one tests. [CLICK] The conftest behind it: seven hundred forty-four — almost twice as much infrastructure as tests, on purpose. [CLICK] And through double parametrization, that 21 tests with, two hundred three recordings containing two thousand seven hundred expected events exploded to about thirty-nine thousand test items. [CLICK] From four pages of code.</aside>
+      </section>
+
+      <!-- ============ S31 · AMPLIFIER · Bugfix loop ============ -->
+      <section class="gk-tally">
+        <div class="gk-frame">
+          <div class="gk-line">bug reported → pull the recording → JSON case</div>
+          <div class="gk-line fragment" data-fragment-index="1">→ fix → smoke tests</div>
+          <div class="gk-line fragment" data-fragment-index="2">→ long run overnight</div>
+          <div class="gk-line fragment" data-fragment-index="3">→ next day: ship</div>
+          <div class="gk-line fragment" data-fragment-index="4" style="margin-top:0.5em;"><span class="gk-strike">deploy &amp; wait for the phone to ring</span></div>
+        </div>
+        <aside class="notes">[⏱ 26:26] And here's the loop it bought us: a bug reported on production? Cut the recording, drop in a JSON — that's a new regression case, zero code. [CLICK] Fix it, run the smoke tests. [CLICK] A long run overnight. [CLICK] And the next day, the new version ships. [CLICK] Remember the world before? Deploy, and wait for the phone to ring. That phone call became a red test on my screen.</aside>
+      </section>
+
+      <!-- ============ S32 · PAYOFF · "Four months." ============ -->
+      <section class="gk-stat">
+        <div class="gk-frame">
+          <div class="gk-label" style="margin-bottom:0.3em; margin-top:0;">How long did it take to <strong>build</strong> this? <span class="gk-small">(not to run it — to build it)</span></div>
+          <div class="gk-number fragment" data-fragment-index="1">4 months</div>
+          <div class="gk-label fragment" data-fragment-index="2" style="max-width:24em;">We built the smallest thing that gave feedback — and we continue improving it.</div>
+        </div>
+        <aside class="notes">[⏱ 27:00] Now, one question. How long did it take to build all this? Not to run the tests — to build it: the docker setup, the hooks, the matching, the reports. [pause — it belongs to me] [CLICK] Four months. [CLICK] And the thing I want you to hear is this: the clumsy first version — the one where we waited ten minutes for every answer — was already better than anything we had before. We didn't design the perfect suite and then switch it on. We built the smallest thing that gave feedback, and we continue improving it.</aside>
+      </section>
+
+      <!-- ============ S34 · AMPLIFIER · AAA in the test body ============ -->
+      <section data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-codehead">Arrange · Act · Assert — all in the body</div>
+          <pre data-id="aaa-code"><code class="language-python" data-trim data-noescape data-line-numbers="|2|3|4|" data-fragment-index="1">
+def test_recognize_car():
+    frame = load_frame("bha-215.png")           # Arrange
+    sighting = recognize(frame)                 # Act
+    assert sighting.plate == "BHA-215"          # Assert
+          </code></pre>
+          <p class="fragment" data-fragment-index="4" style="margin-top:0.4em;"><strong>Simple? Then this is perfect.</strong></p>
+        </div>
+        <aside class="notes">[⏱ 27:56] Now — most of you will never build something like this. And that's fine. But there's a smaller version of this idea that I use almost every week, and this is the part I really want you to take home. Think of the simplest test you know: [CLICK] Arrange, [CLICK] Act, [CLICK] Assert — all three right there in the body. [CLICK] And when it's simple, that's perfect. You open the test and you see everything: the inputs, the action, the expectation, in one place.</aside>
+      </section>
+
+      <!-- ============ S35 · AMPLIFIER · Arrange → fixture ============ -->
+      <section data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-codehead"  data-id="aaa-title">The move we all know: Arrange → fixture</div>
+          <pre data-id="aaa-code"><code class="language-python" data-trim data-noescape data-line-numbers="|1-3|5-7">
+@pytest.fixture
+def frame():
+    return load_frame("bha-215.png")            # Arrange
+
+def test_recognize_car(frame):
+    sighting = recognize(frame)                 # Act
+    assert sighting.plate == "BHA-215"          # Assert
+          </code></pre>
+        </div>
+        <aside class="notes">[⏱ 28:36] When the arrange gets heavy, we all know the move: [CLICK] push it into a fixture — [CLICK] and the test body slims down to just the act and the assert. [don't stop — this is the setup for the next slide]</aside>
+      </section>
+
+      <!-- ============ S36 · AMPLIFIER · Act → fixture (heart of the beat) ============ -->
+      <section data-auto-animate>
+        <div class="gk-frame">
+          <div class="gk-codehead" data-id="aaa-title">The one fewer reach for: Act → fixture</div>
+          <pre data-id="aaa-code"><code class="language-python" data-trim data-noescape data-line-numbers="|5-8|10-11|13-14|16-17" data-fragment-index="1">
+@pytest.fixture(scope="module")
+def frame():                          # Arrange
+    return load_frame("bha-215.png")
+
+@pytest.fixture(scope="module")
+def sighting(frame, recognize_spy):   # Act — runs once per module
+    recognize_spy = Mock(wraps=recognize)
+    return recognize_spy(frame)
+
+def test_plate(sighting):     
+    assert sighting.plate == "BHA-215"
+
+def test_color(sighting):
+    assert sighting.color == "navy"
+
+def test_act_ran_once(recognize_spy):
+    assert recognize_spy.call_count == 1        # proof: 2 tests, one Act
+          </code></pre>
+          <p class="fragment" data-fragment-index="5" style="font-size:0.8em; margin-top:0.2em;"><strong>Hide the complexity in the fixtures. Keep the tests down to a few lines.</strong></p>
+        </div>
+        <aside class="notes">[⏱ 28:50] But here's the one fewer people reach for. Sometimes the Act is expensive — a function that runs for thirty seconds and returns a big, rich result. The instinct is one test with twenty assertions. But then the first failing assert hides the other nineteen. And if you split it into twenty tests, you pay the thirty seconds twenty times. [CLICK] So push the Act into a fixture too — module-scoped, so it runs once — [CLICK] Each tiny test just pulls that result [CLICK] and checks one thing. [CLICK] The proof: three tests, and the act ran exactly once. Now the expensive work happens once — and if assert one and assert twenty both fail, you see both, immediately. That's the whole principle, and it's the same one behind everything I showed you today: [CLICK] hide the complexity in the fixtures, keep the tests down to a few lines.</aside>
+      </section>
+
+      <!-- ============ S38 · AMPLIFIER · Pascal ============ -->
+      <section class="gk-billboard gk-center">
+        <div class="gk-frame gk-lines">
+          <h2>
+            <span class="l fragment" data-fragment-index="1"">"I made this longer only because…</span>
+            <span class="l fragment" data-fragment-index="2">…I had no time to make it shorter."</span>
+            <span class="l muted fragment" data-fragment-index="3" style="font-size:0.6em; margin-top:0.6em;">— Blaise Pascal, 1657</span>
+          </h2>
+        </div>
+        <aside class="notes">[⏱ 30:43] Here's the thing: it's easy to write complicated code that does magical things. It's much harder to get the same result from code that looks simple. Pascal apologized in a letter: "I made this longer only because… [CLICK] …I had no time to make it shorter." [CLICK] Writing short takes longer. Writing simple takes skill — and if you can't yet, that's not failure, that's a training plan. So take something you've already tested well — that's your safety net — and try the same problem again, simpler. And again.</aside>
+      </section>
+
+      <!-- ============ S39 · PAYOFF · "Go build yours." ============ -->
+      <section class="gk-billboard">
+        <div class="gk-frame gk-lines">
+          <h1>
+            <span class="l muted" style="font-size:0.6em;">The simplest tests I ever wrote.</span>
+            <span class="l muted fragment" data-fragment-index="1" style="font-size:0.6em;">The hardest suite I ever built.</span>
+            <span class="l fragment" data-fragment-index="2" style="margin-top:0.3em;">Go build yours.</span>
+          </h1>
+          <div class="gk-endrow fragment" data-fragment-index="2">
+            <div class="qr"><img src="./img/qr.svg" alt="QR: belazy.dev/talks/the-hardest-test-suite-i-ever-built"></div>
+            <div>
+              <div class="gk-accent" style="font-family:var(--gk-font-mono);">belazy.dev/talks/the-hardest-test-suite-i-ever-built</div>
+              <div class="muted">Grzegorz Kocjan</div>
+            </div>
+          </div>
+        </div>
+        <aside class="notes">[⏱ 31:31] The simplest tests I ever wrote. [CLICK] The hardest suite I ever built. [CLICK] Go build yours. Thank you. [slide stays up through Q&A — repo + contact]</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="./reveal/dist/reveal.js"></script>
+  <script src="./reveal/plugin/highlight/highlight.js"></script>
+  <script src="./reveal/plugin/notes/notes.js"></script>
+  <script>
+    // QA: ?fragments=false shows all fragments at once (composite screenshots)
+    const _qs = new URLSearchParams(location.search);
+    const _showAll = _qs.get('fragments') === 'false';
+    Reveal.initialize({
+      hash: true,
+      transition: 'none',
+      autoAnimateDuration: 0.5,
+      width: 1920, height: 1080,
+      margin: 0,
+      center: false,
+      controls: false,
+      progress: false,
+      fragments: !_showAll,
+      plugins: [ RevealHighlight, RevealNotes ]
+    });
+  </script>
+</body>
+</html>

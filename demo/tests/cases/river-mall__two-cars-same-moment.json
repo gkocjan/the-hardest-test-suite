@@ -1,0 +1,13 @@
+{
+  "lot_name": "river-mall",
+  "case_name": "two-cars-same-moment",
+  "recording": "river-mall-003-two-cars",
+  "duration_ms": 12000,
+  "all_vehicles": [
+    {"plate": "RKO-338", "color": "blue", "make": "heron", "direction": "IN", "appear_at": 5000},
+    {"plate": "LWB-772", "color": "yellow", "make": "puma", "direction": "IN", "appear_at": 5000}
+  ],
+  "noise": {
+    "emit_order": ["LWB-772", "RKO-338"]
+  }
+}

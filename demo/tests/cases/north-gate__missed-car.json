@@ -1,0 +1,15 @@
+{
+  "lot_name": "north-gate",
+  "case_name": "missed-car",
+  "recording": "north-gate-001-missed-car",
+  "duration_ms": 18000,
+  "all_vehicles": [
+    {"plate": "KTU-733", "color": "red", "make": "puma", "direction": "IN", "appear_at": 3000},
+    {"plate": "BHA-215", "color": "black", "make": "lynx", "direction": "IN", "appear_at": 8000},
+    {"plate": "PKR-119", "color": "white", "make": "otter", "direction": "OUT", "appear_at": 13000}
+  ],
+  "noise": {
+    "color_confusion": {"BHA-215": "navy"},
+    "regressions": {"drop": ["KTU-733"]}
+  }
+}

@@ -1,0 +1,329 @@
+/* ============================================================
+   GK-DARK — deck theme "The hardest test suite I ever built"
+   Copy of templates/reveal/gk-dark/theme.css + @font-face (offline)
+   + per-presentation overrides (illustrations, mini-ladder, swap).
+   No brand kit → gk-dark base palette.
+   ============================================================ */
+
+/* ---------- LOCAL FONTS (woff2 in ./fonts/) ---------- */
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 400;
+  src: url("./fonts/lato-400.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 700;
+  src: url("./fonts/lato-700.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Lato"; font-style: normal; font-weight: 800;
+  src: url("./fonts/lato-900.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400;
+  src: url("./fonts/jbmono-400.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 700;
+  src: url("./fonts/jbmono-700.woff2") format("woff2"); font-display: swap; }
+
+:root {
+  --gk-bg: #0e1116;
+  --gk-text: #e6e8eb;
+  --gk-muted: #8b949e;
+  --gk-accent: #3fb68b;
+  --gk-accent-2: #e05252;
+
+  --gk-font: "Lato", "Segoe UI", system-ui, sans-serif;
+  --gk-font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --gk-weight-normal: 400;
+  --gk-weight-bold: 800;
+
+  --gk-margin: 110px;
+  --gk-gutter: 1.2rem;
+  --gk-slide-h: 1080px;
+}
+
+/* ---------- Base ---------- */
+.reveal-viewport { background: var(--gk-bg); }
+.reveal {
+  font-family: var(--gk-font);
+  font-weight: var(--gk-weight-normal);
+  color: var(--gk-text);
+  font-size: 42px;
+}
+.reveal .slides section { text-align: left; padding: 0 var(--gk-margin); box-sizing: border-box; }
+
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: var(--gk-font);
+  font-weight: var(--gk-weight-bold);
+  color: var(--gk-text);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-transform: none;
+  margin-bottom: 0.5em;
+}
+.reveal h1 { font-size: 2.2em; }
+.reveal h2 { font-size: 1.6em; }
+.reveal h3 { font-size: 1.1em; color: var(--gk-muted); }
+
+.reveal strong { font-weight: var(--gk-weight-bold); color: var(--gk-accent); }
+.reveal a { color: var(--gk-accent); text-decoration: none; }
+.reveal .muted { color: var(--gk-muted); }
+.reveal em { font-style: italic; color: var(--gk-text); }
+
+.reveal .slide-number { display: none; }
+
+/* ---------- LAYOUTS ---------- */
+.gk-frame { height: var(--gk-slide-h); box-sizing: border-box; display: flex;
+            flex-direction: column; justify-content: center; }
+section.gk-fullbleed { height: var(--gk-slide-h); }
+
+/* TEASER / billboard */
+.gk-billboard .gk-frame { align-items: flex-start; }
+.gk-billboard h1, .gk-billboard h2 { font-size: 2.6em; max-width: 14em; }
+.gk-billboard .gk-kicker {
+  color: var(--gk-muted); font-size: 0.5em; text-transform: uppercase;
+  letter-spacing: 0.2em; margin-bottom: 1.2em;
+}
+.gk-billboard.gk-center .gk-frame { align-items: center; text-align: center; }
+.gk-billboard.gk-center h1, .gk-billboard.gk-center h2 { text-align: center; }
+
+/* STAT */
+.gk-stat { text-align: center !important; }
+.gk-stat .gk-frame { align-items: center; }
+.gk-stat .gk-number { font-size: 4.5em; font-weight: var(--gk-weight-bold); line-height: 1; color: var(--gk-accent); }
+.gk-stat .gk-label { font-size: 0.8em; color: var(--gk-muted); margin-top: 0.6em; }
+
+/* SPLIT */
+.gk-split .gk-frame { display: grid; grid-template-columns: 5fr 7fr; gap: var(--gk-gutter); align-items: center; justify-content: initial; }
+.gk-split.gk-split-even .gk-frame { grid-template-columns: 1fr 1fr; }
+
+/* COMPARE */
+.gk-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gk-gutter); align-items: start; }
+.gk-compare .gk-bad  { border-top: 6px solid var(--gk-accent-2); padding-top: 0.5em; }
+.gk-compare .gk-good { border-top: 6px solid var(--gk-accent);   padding-top: 0.5em; }
+.gk-compare h3 { font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.15em; }
+.gk-compare .gk-bad  h3 { color: var(--gk-accent-2); }
+.gk-compare .gk-good h3 { color: var(--gk-accent); }
+
+/* FULL-BLEED */
+section.gk-fullbleed { padding: 0 !important; }
+.gk-fullbleed .gk-bg {
+  position: absolute; inset: 0; background-size: cover; background-position: center;
+  filter: brightness(0.55) saturate(0.6);
+}
+.gk-fullbleed .gk-caption {
+  position: absolute; left: var(--gk-margin); bottom: 12%;
+  font-size: 1.4em; font-weight: var(--gk-weight-bold); max-width: 60%;
+}
+
+/* STEPS */
+.gk-steps { display: grid; grid-auto-flow: column; gap: var(--gk-gutter); align-items: start; margin-top: 1em; }
+.gk-steps .gk-step { text-align: center; font-size: 0.65em; }
+.gk-steps .gk-step .gk-icon {
+  width: 2.6em; height: 2.6em; margin: 0 auto 0.5em; border-radius: 50%;
+  border: 3px solid var(--gk-accent); display: flex; align-items: center;
+  justify-content: center; font-size: 1.6em; font-weight: var(--gk-weight-bold);
+}
+
+/* ---------- CODE ---------- */
+.reveal pre {
+  width: 100%; max-width: 100%; margin: 0.4em 0; box-shadow: none;
+  font-size: 0.62em; line-height: 1.45; box-sizing: border-box;
+  /* CRITICAL for stepped data-line-numbers="a|b|c": the highlight plugin clones
+     <code> per step and positions the copies absolutely (top:0;left:0). Without position:relative
+     on <pre> the copies anchor to the slide section (1920×1080) → "code full-screen"
+     covering the title. Root cause of the zoom from 11.07 — fixed 2026-07-11. */
+  position: relative; overflow: hidden;
+}
+.reveal pre code {
+  font-family: var(--gk-font-mono); background: #161b22;
+  border-radius: 10px; padding: 1em 1.2em; max-height: 760px;
+  font-variant-ligatures: none;
+}
+.reveal .hljs .hljs-ln-line[data-line-number] { transition: opacity .2s; }
+.reveal .hljs.has-highlights tr:not(.highlight-line) { opacity: 0.25; }
+/* complement to the position:relative fix above: without this the steps inherit min-height:100%
+   from reveal's core CSS and stretch the code panel to the full height of pre for short code */
+.reveal pre code.hljs { min-height: 0 !important; }
+
+/* diff (S21): monokai gives deletion=grayish-brown — we force the theme palette */
+.reveal code.language-diff .hljs-deletion { color: var(--gk-accent-2); }
+.reveal code.language-diff .hljs-addition { color: var(--gk-accent); }
+
+/* S28b: highlight ONLY the new bar 0.90 (the only numeric literal outside a string
+   in the block) — accent + bold as a second channel (not just color). The number .0 in the format-spec
+   of the f-string is inside .hljs-string → we revert it to the string color. */
+.reveal #s28b .hljs-number { color: var(--gk-accent); font-weight: 700; }
+.reveal #s28b .hljs-string .hljs-number { color: inherit; font-weight: normal; }
+
+/* S28: after the last click (trigger .gk-red-085 visible) light up the old bar
+   0.85 in red (accent-2 + bold) — the next click morphs it to green 0.90 on S28b. */
+.reveal #s28 .gk-frame:has(.gk-red-085.visible) .hljs-number { color: var(--gk-accent-2); font-weight: 700; }
+.reveal #s28 .gk-frame:has(.gk-red-085.visible) .hljs-string .hljs-number { color: inherit; font-weight: normal; }
+
+/* ---------- SCREENSHOTS ---------- */
+.gk-shot { position: relative; display: inline-block; }
+.gk-shot img { max-width: 100%; max-height: 860px; border-radius: 8px; display: block; }
+.gk-shot .gk-dim { position: absolute; inset: 0; background: rgba(8,10,14,0); transition: background .3s; pointer-events: none; }
+.gk-shot.dimmed .gk-dim { background: rgba(8,10,14,0.72); }
+.gk-shot .gk-ring {
+  position: absolute; border: 4px solid var(--gk-accent-2); border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(8,10,14,0.72);
+}
+
+/* ---------- CHARTS / SVG ---------- */
+.gk-chart .layer-scale { color: var(--gk-muted); opacity: 0.6; }
+.gk-chart .layer-data  { color: var(--gk-muted); }
+.gk-chart .layer-focus { color: var(--gk-accent); }
+.gk-chart .bar { fill: var(--gk-muted); }
+.gk-chart .bar.focus { fill: var(--gk-accent); }
+.gk-chart .bar.focus-bad { fill: var(--gk-accent-2); }
+
+/* ---------- FRAGMENTS ---------- */
+.reveal .fragment { transition: all .25s ease; }
+.reveal .fragment.gk-spotlight.visible ~ .gk-rest { opacity: 0.25; }
+
+/* ============================================================
+   PER-PRESENTATION OVERRIDES (hardest-test-suite)
+   ============================================================ */
+
+/* Central centering for payoff-code (S02/S18) */
+.gk-code-center .gk-frame { align-items: center; justify-content: center; }
+.gk-code-center pre { width: auto; }
+.gk-code-center pre code { font-size: 1.5em; padding: 1.2em 1.6em; }
+
+/* Code-slide header (smaller, muted-kicker above the code) */
+.gk-codehead { font-size: 0.7em; color: var(--gk-muted); text-transform: uppercase;
+  letter-spacing: 0.14em; margin-bottom: 0.6em; font-weight: var(--gk-weight-bold); }
+
+/* Big list of numbers / tally on black (S03, S26, S30, S31) */
+.gk-tally .gk-frame { align-items: flex-start; }
+.gk-tally .gk-line { font-size: 1.15em; margin: 0.18em 0; line-height: 1.15; }
+.gk-tally .gk-line .n { font-family: var(--gk-font-mono); font-weight: var(--gk-weight-bold); }
+.gk-tally .gk-line.big { font-size: 1.9em; }
+.gk-tally .gk-context { color: var(--gk-muted); font-size: 0.7em; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 0.8em; }
+.gk-strike { text-decoration: line-through; color: var(--gk-muted); }
+
+/* Swap in place (S09 "later", S18 assert→warn): absolute stack */
+.gk-swap { position: relative; display: inline-block; }
+.gk-swap > * { }
+.gk-swap-abs { position: relative; }
+.gk-swap-abs > * { grid-area: 1 / 1; }
+.gk-swap-grid { display: grid; }
+.gk-swap-grid > * { grid-area: 1 / 1; }
+
+/* The "…later" card (custom styling, NOT the original) */
+.gk-later { text-align: center; }
+.gk-later .card {
+  display: inline-block; font-style: italic; font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.4em; color: var(--gk-text); letter-spacing: 0.02em;
+  padding: 0.5em 1.2em; border: 2px solid var(--gk-muted); border-radius: 4px;
+  background: rgba(255,255,255,0.02);
+}
+.gk-later .card small { display:block; font-size:0.28em; letter-spacing:0.3em;
+  text-transform:uppercase; font-style:normal; color:var(--gk-muted); margin-bottom:0.4em; }
+
+/* Sliding-in illustrations (Honda / basement overlay) */
+.gk-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  z-index: 20; pointer-events: none; }
+.gk-overlay img, .gk-overlay svg { max-width: 62%; max-height: 70%; }
+.gk-honda { justify-content: center; }
+/* Honda entry: invisible fragment holds the car past the right edge; on click it slides in */
+.gk-honda .car { max-width: 88%; max-height: 88%; transform: translateX(1990px);
+  transition: transform 1.1s cubic-bezier(.22,.9,.32,1); }
+.gk-overlay.gk-honda.visible .car { transform: translateX(0); }
+
+/* Spectrum mini-ladder in the corner (S27/S28 closing the open-loop from S19) */
+/* sections have content-box + padding 110px → the box's right edge falls outside 1920,
+   so we anchor the mini-ladder via left (slide coordinates), not right */
+/* rung spacing ONLY via flex gap — margin in em would compute differently for
+   .rung (font-size 0.42em) and the .swap wrapper (full slide font) → uneven spacing */
+.gk-mini-ladder { position: absolute; left: 1470px; top: 90px; width: 340px; z-index: 5;
+  display: flex; flex-direction: column; gap: 8px; }
+.gk-mini-ladder .rung { border: 2px solid var(--gk-muted); color: var(--gk-muted);
+  border-radius: 6px; padding: 0.18em 0.5em; margin: 0; font-size: 0.42em;
+  letter-spacing: 0.04em; white-space: nowrap; }
+.gk-mini-ladder .rung.on { border-color: var(--gk-accent); color: var(--gk-accent);
+  font-weight: var(--gk-weight-bold); }
+.gk-mini-ladder .rung.q { border-style: dashed; }
+/* swapping rung "N · ?" for a filled one on click (like .gk-ladder .swap on S19) */
+.gk-mini-ladder .swap { position: relative; }
+/* ladder returning full-screen (S27a) — auto-animate shrinks it to the corner of the code slide;
+   proportions = mini ×2.38 (340px/0.42em → 810px/1em), so scaling is uniform */
+.gk-ladder-return .gk-frame { align-items: center; }
+.gk-mini-ladder.big { position: static; left: auto; top: auto; width: 810px; gap: 20px; }
+.gk-mini-ladder.big .rung { font-size: 1em; border-width: 3px; border-radius: 12px; }
+.gk-mini-ladder .swap .rung.full { position: absolute; inset: 0; }
+
+/* Main spectrum ladder (S19) */
+.gk-ladder { display: flex; flex-direction: column; gap: 0.5rem; max-width: 20em; }
+.gk-ladder .rung { border: 3px solid var(--gk-muted); color: var(--gk-text);
+  border-radius: 10px; padding: 0.5em 0.7em; font-size: 0.62em; }
+.gk-ladder .rung .lvl { color: var(--gk-muted); font-size: 0.72em; letter-spacing: 0.14em;
+  text-transform: uppercase; display: block; margin-bottom: 0.15em; }
+.gk-ladder .rung.hard { border-color: var(--gk-accent); }
+.gk-ladder .rung.warn { border-color: var(--gk-accent-2); }
+.gk-ladder .rung.q { border-style: dashed; color: var(--gk-muted); }
+/* swapping rung "N · ?" for the full one on click (fade-out + fade-in at the same index) */
+.gk-ladder .swap { position: relative; }
+.gk-ladder .swap .rung.full { position: absolute; inset: 0; }
+
+/* Schematic boxes (S04, S22) */
+.gk-boxrow { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+/* enlarged variant (S04 arrange + S06 camera — one style, author's decision 13.07) */
+.gk-boxrow-lg { font-size: 1.7em; gap: 0.4em; }
+.gk-box { border: 3px solid var(--gk-muted); border-radius: 12px; padding: 0.5em 0.7em;
+  font-size: 0.6em; color: var(--gk-text); text-align: center; }
+.gk-box .ic { font-size: 1.4em; display: block; margin-bottom: 0.1em; color: var(--gk-muted); }
+.gk-brace { border: 3px solid var(--gk-accent); border-radius: 14px; padding: 0.6em 0.9em;
+  color: var(--gk-accent); font-weight: var(--gk-weight-bold);
+  align-self: flex-start; max-width: 100%; }
+
+/* Timeline (S21) */
+.gk-timeline { position: relative; margin-top: 1em; }
+.gk-timeline .axis { height: 4px; background: var(--gk-muted); opacity: 0.5; margin: 2.5em 0; }
+.gk-timeline .pt { display: inline-block; }
+
+/* Valet ticket (S20) */
+.gk-ticket { border: 3px solid var(--gk-muted); border-radius: 10px; background: rgba(255,255,255,0.03);
+  padding: 0.6em 0.8em; font-family: var(--gk-font-mono); font-size: 0.6em; max-width: 12em; }
+.gk-ticket .row { display: flex; justify-content: space-between; gap: 1em; padding: 0.18em 0;
+  border-bottom: 1px dashed rgba(139,148,158,0.35); }
+.gk-ticket .row:last-child { border-bottom: none; }
+.gk-ticket .row .k { color: var(--gk-muted); letter-spacing: 0.1em; }
+.gk-ticket .row.hl .k, .gk-ticket .row.hl .v { color: var(--gk-accent); font-weight: 700; }
+.gk-ticket .row.hl2 .k, .gk-ticket .row.hl2 .v { color: var(--gk-accent-2); font-weight: 700; }
+
+/* Big single-line code-hero (S17) */
+.gk-oneliner .gk-frame { align-items: center; }
+.gk-oneliner pre code { font-size: 1.4em; }
+.gk-crossed { position: relative; }
+
+/* YAML contrast (S07) */
+.gk-yaml { font-family: var(--gk-font-mono); font-size: 0.9em; line-height: 1.8; }
+.gk-yaml .cmt { color: var(--gk-muted); }
+.gk-yaml .big { color: var(--gk-accent-2); font-weight: 700; }
+
+/* Phrase-by-phrase on the billboard (S37, S38, S15, S08) */
+.gk-lines h2 { line-height: 1.2; }
+.gk-lines .l { display: block; }
+.gk-lines .l.dim { color: var(--gk-muted); }
+
+/* QR / repo in the finale footer */
+.gk-endrow { display: flex; gap: 2em; align-items: center; margin-top: 1.2em; font-size: 0.6em; }
+.gk-endrow .qr { width: 300px; height: 300px; background: #fff; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; }
+.gk-endrow .qr img { width: 268px; height: 268px; }
+
+/* helpers */
+.gk-accent { color: var(--gk-accent); }
+.gk-bad-text { color: var(--gk-accent-2); }
+.reveal .gk-bad-text strong { color: var(--gk-accent-2); } /* strong must not override to green */
+.gk-small { font-size: 0.62em; color: var(--gk-muted); }
+.reveal .fragment.gk-swap-out.visible { opacity: 0; }
+
+/* highlight-in-place: element visible immediately, changes color on its own click
+   (S11 — highlighting test signatures separately) */
+.reveal .fragment.gk-hl { opacity: 1; visibility: inherit; }
+.reveal .fragment.gk-hl.visible { color: var(--gk-accent); font-weight: 700; }
+
+/* signatures block (S11 panel B) */
+/* in signatures the highlight lives only as current-fragment: clicking recording_case
+   extinguishes the earlier highlight of vehicle_case (author's decision 13.07) */
+.gk-sig .fragment.gk-hl.visible:not(.current-fragment) { color: inherit; font-weight: inherit; }
+.gk-sig { font-family: var(--gk-font-mono); font-size: 0.6em; line-height: 1.7; margin-top: 0.5em; }
+.gk-sig .head { color: var(--gk-muted); font-size: 0.9em; margin-bottom: 0.3em; }
+.gk-sig .kw { color: #ff7bbf; }

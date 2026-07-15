@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The hardest test suite I ever built — handout</title>
+  <style>
+    @font-face { font-family:"Lato"; font-weight:400; src:url("./fonts/lato-400.woff2") format("woff2"); font-display:swap; }
+    @font-face { font-family:"Lato"; font-weight:700; src:url("./fonts/lato-700.woff2") format("woff2"); font-display:swap; }
+    @font-face { font-family:"JetBrains Mono"; font-weight:400; src:url("./fonts/jbmono-400.woff2") format("woff2"); font-display:swap; }
+    :root { --ink:#1a1d21; --muted:#5b6570; --accent:#2b8a68; --bad:#c0392b; --rule:#e4e7ea; --bg:#fdfdfb; }
+    * { box-sizing:border-box; }
+    body { font-family:"Lato","Segoe UI",system-ui,sans-serif; color:var(--ink); background:var(--bg);
+           line-height:1.6; margin:0; }
+    .page { max-width:820px; margin:0 auto; padding:64px 40px 96px; }
+    header.doc { border-bottom:3px solid var(--ink); padding-bottom:1.4em; margin-bottom:2.4em; }
+    .kicker { text-transform:uppercase; letter-spacing:0.18em; font-size:0.72rem; color:var(--muted); font-weight:700; }
+    h1 { font-size:2.4rem; line-height:1.1; letter-spacing:-0.02em; margin:0.3em 0 0.2em; }
+    .sub { color:var(--muted); font-size:1.05rem; }
+    .meta { margin-top:1em; font-size:0.85rem; color:var(--muted); }
+    h2 { font-size:1.5rem; letter-spacing:-0.01em; margin:2.4em 0 0.2em; padding-top:0.6em; }
+    h2 .t { font-size:0.8rem; color:var(--muted); font-weight:400; font-family:"JetBrains Mono",monospace; }
+    h2.opt::after { content:" · optional"; color:var(--bad); font-size:0.8rem; font-weight:400; }
+    .phase { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; font-weight:700; color:var(--muted); }
+    p { margin:0.7em 0; }
+    /* WCAG AA contrast for small text on #f2f8f5 — darker shade of the accent than --accent */
+    .cue { display:block; font-family:"JetBrains Mono",monospace; font-size:0.8rem; color:#1d654b;
+           border-left:3px solid var(--accent); padding:0.15em 0 0.15em 0.8em; margin:0.9em 0; background:#f2f8f5; }
+    strong { color:var(--ink); }
+    em { color:#33383d; }
+    code { font-family:"JetBrains Mono",monospace; font-size:0.9em; background:#f0f2f4; padding:0.1em 0.35em; border-radius:4px; }
+    .lead { font-size:1.05rem; color:#33383d; }
+    ul.checklist { list-style:none; padding-left:0; }
+    ul.checklist li { padding:0.25em 0 0.25em 1.7em; position:relative; border-bottom:1px solid var(--rule); }
+    ul.checklist li::before { content:"✓"; color:var(--accent); position:absolute; left:0; font-weight:700; }
+    ul.checklist li.no::before { content:"○"; color:var(--muted); }
+    hr { border:none; border-top:1px solid var(--rule); margin:2.4em 0; }
+    footer { margin-top:3em; padding-top:1.2em; border-top:1px solid var(--rule); color:var(--muted); font-size:0.85rem; }
+    a { color:var(--accent); }
+    @media print { .page { padding:0; max-width:none; } body { background:#fff; } .cue { background:none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="doc">
+      <div class="kicker">EuroPython 2026 · handout</div>
+      <h1>The hardest test suite I ever built</h1>
+      <div class="sub">A pytest case study — Grzegorz Kocjan</div>
+      <p class="meta">The full talk in written form. Talk page &amp; code:
+        <code>belazy.dev/talks/the-hardest-test-suite-i-ever-built</code>. Runnable code for every snippet below.</p>
+    </header>
+
+    <p class="lead">The thesis: the hardest test suite is made of the <em>simplest</em> tests. The difficulty
+    doesn't live in the assertions — it lives in the architecture around them. This is the story of building
+    integration tests for a computer-vision system that watched real cars, on real cameras, 24 hours a day.</p>
+
+    <h2>Opener — the simplest tests in the world <span class="t">1.5′</span></h2>
+    <p class="phase">Hook</p>
+    <p>How do you imagine the integration tests for a really complicated system? Mine was computer vision:
+    real cars, real cameras, running twenty-four hours a day — and right about 85% of the time, <em>by design</em>.</p>
+    <p>Picture <strong>yours</strong>. The most complicated system you've ever worked on. How would you write
+    integration tests for <em>that</em>?</p>
+    <span class="cue">slide — the color test, two lines</span>
+    <p>Here's mine. <strong>This is it. This is enough.</strong> Twenty-one tests, most a few lines long — the
+    shortest, a single assert. The simplest tests I ever wrote. And together: <strong>the hardest test suite I ever
+    built.</strong> In the next thirty minutes, I'll show you why both halves are true.</p>
+
+    <h2>The world before — our regression detector was a human <span class="t">1.5′</span></h2>
+    <p>Back to 2021. The system was already live: a computer-vision pipeline watching parking garages — cameras
+    at the entrance, a model reading plates, colors, makes. It had run in production for <strong>seventeen months</strong>.
+    Integration tests: <strong>zero</strong>. Unit tests: <strong>ninety-six</strong>. Tests that could catch a bug:
+    <strong>still zero</strong>.</p>
+    <p>So here's how we learned about regressions. We'd change something, deploy, and a day or two later a phone
+    would ring — a garage attendant saying <em>"the system is much worse today."</em> That was our regression
+    detection. A human. Noticing. Calling.</p>
+    <p>When I say the system was right "about 85% of the time" — that's not a measurement, it's a
+    <em>guesstimate</em>. Before the suite, there was nothing to measure with.</p>
+    <span class="cue">slide — three doors: unit tests and acceptance tests locked, integration tests ajar</span>
+    <p>Now, why? The code was written by computer-vision scientists — brilliant people, not software engineers —
+    with legacy architecture: global state everywhere, nothing to isolate. Unit tests, acceptance tests? Not an
+    option. Integration tests weren't a philosophy — <strong>they were the only door that wasn't locked.</strong></p>
+
+    <h2>Challenge 1 — first, make it run at all <span class="t">3.5′</span></h2>
+    <p class="phase">Arrange = start an entire system</p>
+    <p>The first challenge had nothing to do with assertions. In every test there's that boring part at the top —
+    the <em>arrange</em>. Here, "arrange" meant: <strong>start an entire computer-vision system.</strong> Services,
+    a database, a model that wants a GPU — and a camera.</p>
+    <p>We made pytest do it. There's a plugin, <strong>lovely-pytest-docker</strong>, that lets a fixture bring up
+    a whole Docker Compose stack. The suite doesn't <em>assume</em> the system is running — a fixture <em>starts</em>
+    it: containers up, docker compose up in one line. It doesn't guess with a sleep — it waits until the system is
+    actually responsive, and hands the test a ready URL. Want a different garage, a different scenario? That's just
+    a different JSON file — recordings and their configuration are data, not code. And the arrange is ready —
+    always, automatically.</p>
+    <span class="cue">slide — the web_service fixture that brings up docker-compose (snippet 09)</span>
+    <p>But the real trick was the camera. You can't test against a live camera — live cars don't reproduce.
+    So instead there's <strong>cam_mock</strong>: a service that replays frames recorded from the real cameras,
+    as a live stream, at real speed. The system doesn't know it's watching the past. It thinks it's Wednesday
+    afternoon.</p>
+    <p>And then the test… waits for the recording to be started. When it is, the system is alive, watching a
+    recording where we already know every car, because we put them there. <em>That</em> is the arrange. The system
+    is up, it thinks it's Wednesday afternoon — and a black Honda just pulled in.</p>
+    <p>Was it fast? No. <strong>This is not a suite you run from a pre-commit hook.</strong> It runs on a self-hosted
+    GPU runner. A reasonable test suite has a timeout of ten minutes; this one is set to
+    <code>timeout-minutes: 2880</code>. <strong>That's forty-eight hours. Hours, not minutes</strong> — and with
+    recordings up to twenty-four hours long, even two days is sometimes barely enough. It's an industrial
+    installation, not a unit test.</p>
+    <p>If you steal one thing here: your system doesn't have to be small to be testable. It has to be
+    <strong>startable</strong>. Build your services so they start locally with one command, from day one. Record
+    reality once, replay it forever — and suddenly the most untestable system you own has an arrange.</p>
+
+    <h2>Challenge 2 — thirty seconds, not ten minutes <span class="t">1′ + 2.5′ + 1.5′ + 3.5′</span></h2>
+    <p class="phase">The goal</p>
+    <p>So — look how far we've got. The system starts itself, with one command. The recording plays, cars drive in.
+    The tests run against it. Time to assert. Great, right? <strong>But…</strong></p>
+    <span class="cue">slide — tally: the system starts itself ✓ · the recording plays ✓ · the tests run ✓ · but…</span>
+    <p>The first version we built did the obvious thing: play the whole recording, collect everything, check it
+    <em>at the end</em>. It worked — but a recording runs ten minutes, and some run twenty-four hours. So when the
+    first car got a wrong plate in the first thirty seconds, we found out ten minutes later.</p>
+    <span class="cue">slide — "10 minutes later…" / "24 hours later…"</span>
+    <p>Every debugging cycle cost a full playback. The goal: <strong>feedback in thirty seconds, not ten minutes.</strong>
+    Getting there took two mechanisms — and the first wasn't enough.</p>
+    <p class="phase">Solution 1 — break the monolith</p>
+    <p>First we broke one giant end-of-recording check into many tiny tests, one assertion each: plate, color,
+    direction — for every car. In such cases you would normally use <code>@pytest.mark.parametrize</code> — we
+    started there too. But parametrize
+    is a decorator: its values are frozen the moment Python imports the file — a static list. We wanted to choose
+    which recordings to run <strong>at runtime</strong>, and to feed two fixtures at two different scopes (one per
+    car, one per recording). A decorator can't do that.</p>
+    <p>So we went one level down — into <strong>pytest's basement</strong> — to the hook <code>parametrize</code>
+    itself is built on: <strong><code>pytest_generate_tests</code></strong>. Our cases live in JSON; the hook reads
+    them into pydantic models. Does the test want a <code>vehicle_case</code>? Parametrize it with the loaded cases
+    — <code>indirect=True</code> just means the JSON entry arrives as a ready-made fixture, not a raw value. The
+    second block is the same move at a different scope: <code>recording_case</code> — once per whole recording, not
+    per car. A test picks its world by its <strong>signature alone</strong> — <code>vehicle_case</code> or
+    <code>recording_case</code> — no decorators in the test file, not one. Same file, two scopes, chosen by
+    signature. This helped with <strong>legibility</strong>,
+    not speed: a failure now said exactly <em>this car, this plate, wrong.</em></p>
+    <span class="cue">slide — pytest's basement (photo: "Dunkle Kellertreppe" by ThoBel-0043, Wikimedia Commons, CC BY-SA 4.0) + double parametrization (snippet 02)</span>
+    <p class="phase">The problem — pytest runs in the wrong order</p>
+    <p>By default pytest runs <em>test by test</em>: <code>test_color</code> for every car, <em>then</em>
+    <code>test_plate</code> for every car — ordered by function, not by car. To check the last car's color, the
+    recording has to reach the last car — so to finish, you watch the whole thing. We'd made the report beautiful
+    and left the feedback exactly as slow as before.</p>
+    <span class="cue">slide — default collection order (before)</span>
+    <p class="phase">Solution 2 — reorder, and watch it live</p>
+    <p>To reorder, you need pytest's startup sequence. First it <strong>configures</strong>. Then it
+    <strong>collects</strong> — where <code>pytest_generate_tests</code> built our items. Then, after everything is
+    collected but before a single test runs, one last hook: <strong><code>pytest_collection_modifyitems</code></strong>,
+    which hands you the complete list and says: rearrange it however you like.</p>
+    <span class="cue">slide — pytest lifecycle: configure → collect → modifyitems → run</span>
+    <p>Two hooks, two phases: generate dynamically, then reorder. We group by recording; within a recording, all of
+    a car's checks fire as that car appears, then the next car. Live tests first; <em>end</em> tests (statistics)
+    last. The boundary is an empty fixture — <code>recording_stopped</code> has no body; it exists so a test can
+    say "I run after the movie ends," by its signature.</p>
+    <span class="cue">slide — live/end orchestration (snippet 03)</span>
+    <p>One heresy: some of these items aren't tests. <code>test_start_recording</code> asserts nothing — it starts
+    the recording. Every tutorial says a test must assert. Half of this suite disagrees — and in exchange, every
+    lifecycle step shows up in the report with its own timing, for free.</p>
+    <p>Put it together and something beautiful happens in your terminal: the recording starts and the tests come
+    alive. A car enters, its checks light up; next car — green, green, green; a color warning — yellow, noted.
+    And notice the first and the last line of the output: <code>test_start_recording</code> opens the show,
+    <code>test_wait_for_recording_stop</code> closes it — the lifecycle phases sit right there, like every other item.
+    <strong>You're watching the system be judged, car by car, as it happens.</strong> A broken deploy fails in the
+    first minute — not after twenty-four hours.</p>
+
+    <h2>Challenge 3 — the spectrum of trust <span class="t">1.5′ + 3.5′</span></h2>
+    <p class="phase">The problem — the world where count == 1 dies</p>
+    <p>For years people called me "the testing guy." My assertions looked like this: add a user, assert the count
+    is exactly one. Two plus two is four, every time. The world where <em>correct</em> means <em>equal</em>.
+    So I asserted everything — plate, color, make, exactly — and the tests failed <strong>constantly</strong>. Not
+    because the system was broken; it was doing its job about 85% of the time. They failed because reality doesn't
+    come out to exactly four. The hardest part of the project wasn't Docker or hooks — it was
+    <strong>unlearning <code>count == 1</code></strong>.</p>
+    <p class="phase">The solution — a spectrum of trust</p>
+    <p>Remember my very first slide, the color test — <code>assert color == expected</code>? <strong>I lied.</strong>
+    In the real repository that test asserts nothing. It's <code>warnings.warn("Wrong color")</code>. It cannot fail
+    the build.</p>
+    <span class="cue">slide — "I lied.": assert → warnings.warn</span>
+    <p>That wasn't laziness — it was the biggest shift in how I think about correctness. Expecting "silver" doesn't
+    mean the model must say "silver": at night or on a filthy car, silver reads grey, and that's fine — color was
+    only ever a <strong>hint</strong>. Even the plate didn't have to match 100% — a real business requirement the
+    tests had to encode. So I sorted every check into a <strong>spectrum of trust</strong> — four levels.</p>
+    <p><strong>At the top — must be exactly right.</strong> Direction (in or out — there's no "about"), timing
+    (within a couple seconds), and the plate (with a human tolerance: edit distance of one). Hard assert.</p>
+    <p><strong>Below — only true-ish.</strong> Color, make, model. I don't assert them, I <em>warn</em>. Fail the
+    build every time a dirty silver car reads "grey" and the build is never green — and I'd learn nothing.</p>
+    <span class="cue">slide — the ladder: 4 levels of trust (rungs 3–4 shown as "?")</span>
+    <p>Why this spectrum? I only understood it standing in a garage. You drive to a booth; a camera reads your
+    plate; an attendant hands you a ticket — plate, color, make, time in — and parks your car. The plate is
+    <strong>the bill</strong>: it ties money to the car, so it has to be right. Color and make are just
+    <strong>hints</strong> so a human finds your car in a lot of four hundred; nobody ever corrected those. My
+    spectrum wasn't a clever pattern — it was <strong>the business, copied into assertions.</strong> Hard-assert
+    what the company bills for. Warn about what only helps a human. Measure the rest.</p>
+    <span class="cue">slide — valet ticket · real git diffs (color→warn Jul 30, make/model→warn Oct 4)</span>
+    <p>I didn't get there in one go — you can watch it in the git history: a July diff turns the color assertion
+    into a warning; in October make and model follow. The suite learned to trust less, one assert at a time. And
+    once you stop asserting, one thing becomes essential — something that sounds trivial and absolutely is not:
+    <strong>counting how often we were right.</strong> And counting is where the next challenge was waiting.</p>
+
+    <h2>Challenge 4 — two cars, same second <span class="t">45″ + 3.5′</span></h2>
+    <p class="phase">The problem</p>
+    <p>For a while life was good — until two tests went dead red on an ordinary recording, with both cars detected
+    <em>perfectly</em>. Some garages have <strong>wide entrances</strong>: two cars roll in side by side, same
+    second. I'd assumed the system reports cars in a fixed order. It doesn't — a classic race condition, the same kind
+    you can hit in a regular REST project: one busy CPU thread, and the order flips. Two tests failed.</p>
+    <p class="phase">The solution — match, don't compare</p>
+    <p>Instead of comparing sequences, we <strong>match</strong> — twice: once live, once at the end. Live, when a
+    test asks <em>"dude, where is my car?"</em>, a
+    fixture <code>first_sighting</code> escalates: find my plate allowing <strong>one</strong> wrong character;
+    nothing? Loosen to <strong>two</strong>; still nothing? Nearest unclaimed event in time — and it keeps trying
+    as long as the recording runs. Whatever it finds it <strong>claims</strong>, so no other car grabs it.</p>
+    <span class="cue">slide — escalating search (snippet 04)</span>
+    <p>Like an airport carousel: three suitcases circling, you take <em>yours</em>, check it, move on; the others
+    someone else will claim. Each test waits for <strong>its</strong> car and leaves the rest on the belt.</p>
+    <span class="cue">slide — carousel (photo: "baggage claim" by bradleygee, Flickr, CC BY 2.0)</span>
+    <p>After the recording ends, the real matching runs — <strong>cars matchmaking</strong>. We didn't invent it —
+    we imported <code>scipy.optimize.linear_sum_assignment</code>, the <strong>Hungarian algorithm</strong> (1955):
+    a matchmaking service pairing expected cars with reported events at the cheapest total cost. All the prices
+    live in a <strong>cost matrix</strong> — one row per expected car, one column per reported event — and each
+    cell is computed by <code>_weight</code>, essentially one line: wrong characters in the plate, plus delay in
+    milliseconds over ten thousand — an exchange rate where
+    <strong>ten seconds late costs one typo</strong>. Some pairings are simply forbidden (wrong direction, plate
+    too different) — priced at 10¹².</p>
+    <span class="cue">slide — Cars Matchmaking: cost matrix + Hungarian weight (snippet 05)</span>
+    <p>Whatever can't be paired becomes the numbers: expected with no event → <strong>misses</strong>; event with
+    no car → <strong>extras</strong> (the ghosts); matched but too slow → <strong>late</strong>. And — remember the
+    four levels of the spectrum? Here is the third one: <strong>per recording</strong> — statistics for a single
+    recording. One test per recording, three soft checks — that's the <strong>pytest-check</strong> plugin
+    (soft on purpose — a failing miss must not hide the extras) — every number landing in a shared results bag,
+    a fixture from <strong>pytest-harvest</strong> that lets us share data between tests; the report comes later.</p>
+    <span class="cue">slide — the ladder, rung 3 "per recording" → level 3: misses/extras/late (snippet 07)</span>
+    <p>Before the last level — remember the warnings? One wrong color is a warning, fine. But if the model started
+    getting <em>every</em> color slightly wrong, every plate a little off — each one is just a warning, and the
+    build stays green. I'd never notice the system quietly falling apart. A warning catches the single mistake.
+    <strong>It cannot catch the trend.</strong> So how do you catch the trend?</p>
+    <span class="cue">slide — "Remember the warnings?" · "But a warning cannot catch the trend."</span>
+    <p>The answer is level four — my favorite test in the whole suite, because it tests no car at all. It runs
+    last, reads the accumulated
+    statistics from the entire run, and asserts <strong>one number: the percentage</strong>. The bar started
+    exactly where the system was — 85%. When the system got better, we raised it to <strong>90%</strong> — one
+    number, in one place, and the whole suite demands more from every deploy. One wrong color is a
+    warning; a <em>trend</em> of wrong colors fails the build. That's how you catch a system quietly falling apart.</p>
+    <span class="cue">slide — the ladder, rung 4 "aggregate" → level 4: summary report (snippet 08)</span>
+
+    <h2>Zoom out — what we actually built <span class="t">3′</span></h2>
+    <p>The test file is <strong>401 lines, 21 tests</strong>. The conftest behind it: <strong>744 lines</strong> —
+    almost twice as much infrastructure as tests, on purpose. Through double parametrization, that file explodes
+    into 203 recordings, 2,713 expected events — about <strong>39,000 test items</strong>. From four pages of code.</p>
+    <p>Day to day, that complexity is invisible. A new production bug? Cut the recording, drop in a JSON — a new
+    regression case, zero code. A new field? One test, two lines. It's well hidden — you only meet it if you open
+    the conftest, and most days nobody does. The loop it bought us: bug reported → pull the recording → JSON case →
+    fix → smoke tests → long run overnight → next day it ships. Remember the world before? Deploy and wait for the
+    phone to ring. That phone call became a red test on my screen.</p>
+    <p>How long did it take to <strong>build</strong> all this — not run it, build it: the docker setup, the hooks,
+    the matching, the reports? <strong>Four months.</strong> And the clumsy first version — the one where we waited
+    ten minutes for every answer — was already better than anything we had. We built the smallest thing that gave
+    feedback and we continue improving it — including about 40,000 reference values reviewed and corrected by hand,
+    because sometimes the test is wrong, and fixing the test is part of the work.</p>
+
+    <h2>The take-home — push the Act into a fixture <span class="t">~2.5′</span></h2>
+    <p>Most of you will never build something this elaborate — and that's fine. But there's a smaller version I use
+    almost every week. The simplest test: Arrange, Act, Assert, all in the body. When it's simple, that's perfect —
+    you open the test and see everything.</p>
+    <span class="cue">slide — AAA in the body (snippet 10 / test_1)</span>
+    <p>When the arrange gets heavy, we all know the move: push it into a fixture.</p>
+    <span class="cue">slide — Arrange → fixture (snippet 10 / test_2)</span>
+    <p>Here's the one fewer reach for: sometimes the <strong>Act</strong> is expensive — thirty seconds, a big
+    result. One test with twenty asserts hides nineteen behind the first failure; twenty tests pay the thirty
+    seconds twenty times. So push the <strong>Act</strong> into a module-scoped fixture — it runs once — and let
+    each tiny test pull the result and check one thing. Now the expensive work happens once, and if assert one and
+    assert twenty both fail, you see both. That's the whole principle behind everything here:
+    <strong>hide the complexity in the fixtures, keep the tests down to a few lines.</strong></p>
+    <span class="cue">slide — Act → fixture, scope=module (snippet 10 / test_3)</span>
+
+    <h2>Ending — simple was the result <span class="t">1.5′</span></h2>
+    <p>Remember the first slide? Both halves are true. The tests really are that simple — one assert, two lines.
+    And the suite really was the hardest I ever built — because <strong>simple was not the starting point. Simple
+    was the result.</strong> Four months of work, so that adding a case is dropping in a JSON, adding a check is
+    two lines, and a failing test reads like a sentence.</p>
+    <p>It's easy to write complicated code that does magical things; it's much harder to get the same result from
+    code that looks simple. Pascal apologized in a letter: <em>"I made this longer only because I had no time to
+    make it shorter."</em> Writing short takes longer. Writing simple takes skill — and if you can't yet, that's
+    not failure, that's a training plan. You have an advantage I didn't in 2021: with AI, iteration is nearly free.
+    Take something you've already tested well — that's your safety net — and try the same problem again, simpler.
+    And again.</p>
+    <p>The simplest tests I ever wrote. The hardest suite I ever built. <strong>Go build yours.</strong></p>
+
+    <hr>
+
+    <h2>Appendix — pytest techniques used</h2>
+    <ul class="checklist">
+      <li><code>pytest_generate_tests</code> + <code>indirect=True</code> (double parametrization) — Ch2</li>
+      <li>scope chosen by fixture signature (<code>vehicle_case</code> / <code>recording_case</code>) — Ch2</li>
+      <li><code>pytest_collection_modifyitems</code> (group/sort, live vs end) — Ch2</li>
+      <li>empty fixture as a phase marker (<code>recording_stopped</code>) — Ch2</li>
+      <li>tests without assertions as lifecycle steps — Ch2</li>
+      <li>orchestrating fixtures (<code>first_sighting</code>, <code>start_recording</code>) — Ch1 &amp; Ch4</li>
+      <li>docker-compose via pytest (lovely-pytest-docker) — Ch1</li>
+      <li><code>warnings.warn</code> surfaced in the report — Ch3</li>
+      <li>pytest-check (soft asserts) — Ch4, level 3</li>
+      <li>pytest-harvest / <code>results_bag</code> (runtime statistics) — Ch4, levels 3–4</li>
+      <li class="no">pydantic case models — mentioned in passing</li>
+    </ul>
+
+    <footer>
+      Talk page &amp; code: <code>belazy.dev/talks/the-hardest-test-suite-i-ever-built</code> — every snippet runs.
+      · The production code is private; nothing here is copied from it — the patterns were rebuilt from scratch on
+      synthetic data. The war stories, however, are all true. Including the rickshaw.
+    </footer>
+  </div>
+</body>
+</html>

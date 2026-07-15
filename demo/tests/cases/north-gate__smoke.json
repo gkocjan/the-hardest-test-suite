@@ -1,0 +1,15 @@
+{
+  "lot_name": "north-gate",
+  "case_name": "smoke",
+  "recording": "north-gate-000-smoke",
+  "duration_ms": 15000,
+  "all_vehicles": [
+    {"plate": "PKR-402", "color": "navy", "make": "lynx", "direction": "IN", "appear_at": 3000},
+    {"plate": "WRX-118", "color": "silver", "make": "heron", "direction": "OUT", "appear_at": 9000}
+  ],
+  "noise": {
+    "typos": {"PKR-402": "PKR-4O2"},
+    "delays_ms": {"WRX-118": 1400},
+    "regressions": {"late_ms": {"WRX-118": 9000}}
+  }
+}

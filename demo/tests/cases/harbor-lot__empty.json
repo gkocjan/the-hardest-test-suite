@@ -1,0 +1,8 @@
+{
+  "lot_name": "harbor-lot",
+  "case_name": "empty",
+  "recording": "harbor-lot-005-empty",
+  "duration_ms": 8000,
+  "all_vehicles": [],
+  "noise": {}
+}

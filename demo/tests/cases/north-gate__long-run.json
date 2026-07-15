@@ -1,0 +1,14 @@
+{
+  "lot_name": "north-gate",
+  "case_name": "long-run",
+  "recording": "north-gate-006-long-run",
+  "duration_ms": 600000,
+  "all_vehicles": [
+    {"plate": "JPL-450", "color": "white", "make": "lynx", "direction": "IN", "appear_at": 60000},
+    {"plate": "FRT-882", "color": "red", "make": "falcon", "direction": "OUT", "appear_at": 300000},
+    {"plate": "KKM-217", "color": "navy", "make": "heron", "direction": "IN", "appear_at": 540000}
+  ],
+  "noise": {
+    "typos": {"FRT-882": "FRT-B82"}
+  }
+}

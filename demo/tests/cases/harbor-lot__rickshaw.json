@@ -1,0 +1,13 @@
+{
+  "lot_name": "harbor-lot",
+  "case_name": "rickshaw",
+  "recording": "harbor-lot-004-rickshaw",
+  "duration_ms": 15000,
+  "all_vehicles": [
+    {"plate": "", "color": "yellow", "make": "pedicab", "direction": "IN", "appear_at": 4000, "vehicle_type": "rickshaw"},
+    {"plate": "GDX-905", "color": "black", "make": "otter", "direction": "OUT", "appear_at": 10000}
+  ],
+  "noise": {
+    "ghost_reads": {"": "NEWS-24"}
+  }
+}

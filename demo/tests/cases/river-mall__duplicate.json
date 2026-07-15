@@ -1,0 +1,12 @@
+{
+  "lot_name": "river-mall",
+  "case_name": "duplicate",
+  "recording": "river-mall-002-duplicate",
+  "duration_ms": 12000,
+  "all_vehicles": [
+    {"plate": "MZW-604", "color": "green", "make": "falcon", "direction": "IN", "appear_at": 4000}
+  ],
+  "noise": {
+    "regressions": {"duplicate": ["MZW-604"]}
+  }
+}
