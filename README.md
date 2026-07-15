@@ -7,7 +7,7 @@ Companion repository for the talk *The hardest test suite I ever built — a pyt
 ([EuroPython 2026](https://ep2026.europython.eu/session/the-hardest-test-suite-i-ever-built-a-pytest-case-study)).
 
 - **Talk page:** https://belazy.dev/talks/the-hardest-test-suite-i-ever-built/
-- **Slides (live):** https://gkocjan.github.io/the-hardest-test-suite/slides/ — press **S** for speaker notes
+- **Slides (live):** https://gkocjan.github.io/the-hardest-test-suite/ — press **S** for speaker notes
 - **Slides (local):** [`slides/index.html`](slides/index.html)
 - **Written form of the talk:** [`slides/handout.html`](slides/handout.html)
 - **Runnable demo:** [`demo/`](demo/)
